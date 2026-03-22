@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}学生详情 - 高中成绩分析系统{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-person-badge me-2"></i>学生详情</h2>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="bi bi-person me-2"></i>{{ student.name }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <p class="text-muted mb-1"><i class="bi bi-hash me-1"></i>学号</p>
+                        <h5>{{ student.student_id }}</h5>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="text-muted mb-1"><i class="bi bi-people me-1"></i>班级</p>
+                        <h5>{{ student.class_id }}</h5>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="row text-center">
+                    <div class="col-md-6">
+                        <div class="stat-card">
+                            <div class="stat-label"><i class="bi bi-star me-1"></i>总分</div>
+                            <div class="stat-value text-primary">{{ student.total_score }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="stat-card">
+                            <div class="stat-label"><i class="bi bi-trophy me-1"></i>年级排名</div>
+                            <div class="stat-value text-success">{{ student.total_scaled_school_rank }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('main.rankings_page') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>返回排名
+                    </a>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-speedometer2 me-1"></i>返回概览
+                    </a>
+                    <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                        <i class="bi bi-house me-1"></i>返回首页
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="bi bi-person-circle fs-1 text-secondary"></i>
+                <p class="mt-2 mb-0">学生档案</p>
+                <small class="text-muted">点击链接查看趋势分析</small>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-link-45deg me-2"></i>快速操作</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('main.trend_page') }}?student_query={{ student.student_id }}" class="btn btn-outline-info">
+                        <i class="bi bi-graph-up me-1"></i>查看成绩趋势
+                    </a>
+                    <a href="{{ url_for('main.rankings_page') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-list-ol me-1"></i>查看全部排名
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

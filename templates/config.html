@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}分数线设置 - 高中成绩分析系统{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-sliders me-2"></i>分数线设置</h2>
+
+<form method="POST" action="{{ url_for('main.config_page') }}">
+    <!-- Total Raw Score -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-123 me-2"></i>总分(原始分)</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label" for="total_raw_985">985线</label>
+                    <input type="number" step="0.1" class="form-control" id="total_raw_985" name="total_raw_985" value="{{ config.lines.total_raw['985'] }}" aria-label="总分原始分985线">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="total_raw_211">211线</label>
+                    <input type="number" step="0.1" class="form-control" id="total_raw_211" name="total_raw_211" value="{{ config.lines.total_raw['211'] }}" aria-label="总分原始分211线">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="total_raw_yiben">一本线</label>
+                    <input type="number" step="0.1" class="form-control" id="total_raw_yiben" name="total_raw_yiben" value="{{ config.lines.total_raw['yiben'] }}" aria-label="总分原始分一本线">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Total Scaled Score -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-calculator me-2"></i>总分(赋分)</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label" for="total_scaled_985">985线</label>
+                    <input type="number" step="0.1" class="form-control" id="total_scaled_985" name="total_scaled_985" value="{{ config.lines.total_scaled['985'] }}" aria-label="总分赋分985线">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="total_scaled_211">211线</label>
+                    <input type="number" step="0.1" class="form-control" id="total_scaled_211" name="total_scaled_211" value="{{ config.lines.total_scaled['211'] }}" aria-label="总分赋分211线">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="total_scaled_yiben">一本线</label>
+                    <input type="number" step="0.1" class="form-control" id="total_scaled_yiben" name="total_scaled_yiben" value="{{ config.lines.total_scaled['yiben'] }}" aria-label="总分赋分一本线">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Subjects -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-book me-2"></i>主科 (满分150分)</h5>
+        </div>
+        <div class="card-body">
+            <!-- Chinese -->
+            <h6 class="text-primary">语文</h6>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label" for="chinese_985">985线</label>
+                    <input type="number" step="0.1" class="form-control" id="chinese_985" name="chinese_985" value="{{ config.lines.chinese['985'] }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="chinese_211">211线</label>
+                    <input type="number" step="0.1" class="form-control" id="chinese_211" name="chinese_211" value="{{ config.lines.chinese['211'] }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="chinese_yiben">一本线</label>
+                    <input type="number" step="0.1" class="form-control" id="chinese_yiben" name="chinese_yiben" value="{{ config.lines.chinese['yiben'] }}">
+                </div>
+            </div>
+            
+            <!-- Math -->
+            <h6 class="text-primary">数学</h6>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label" for="math_985">985线</label>
+                    <input type="number" step="0.1" class="form-control" id="math_985" name="math_985" value="{{ config.lines.math['985'] }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="math_211">211线</label>
+                    <input type="number" step="0.1" class="form-control" id="math_211" name="math_211" value="{{ config.lines.math['211'] }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="math_yiben">一本线</label>
+                    <input type="number" step="0.1" class="form-control" id="math_yiben" name="math_yiben" value="{{ config.lines.math['yiben'] }}">
+                </div>
+            </div>
+            
+            <!-- English -->
+            <h6 class="text-primary">英语</h6>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label" for="english_985">985线</label>
+                    <input type="number" step="0.1" class="form-control" id="english_985" name="english_985" value="{{ config.lines.english['985'] }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="english_211">211线</label>
+                    <input type="number" step="0.1" class="form-control" id="english_211" name="english_211" value="{{ config.lines.english['211'] }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="english_yiben">一本线</label>
+                    <input type="number" step="0.1" class="form-control" id="english_yiben" name="english_yiben" value="{{ config.lines.english['yiben'] }}">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Optional Subjects -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>选科 (满分100分)</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <!-- Physics -->
+                <div class="col-md-6 mb-4">
+                    <h6 class="text-info">物理</h6>
+                    <div class="row">
+                        <div class="col-4">
+                            <label class="form-label" for="physics_985">985</label>
+                            <input type="number" step="0.1" class="form-control form-control-sm" id="physics_985" name="physics_985" value="{{ config.lines.physics['985'] }}">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label" for="physics_211">211</label>
+                            <input type="number" step="0.1" class="form-control form-control-sm" id="physics_211" name="physics_211" value="{{ config.lines.physics['211'] }}">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label" for="physics_yiben">一本</label>
+                            <input type="number" step="0.1" class="form-control form-control-sm" id="physics_yiben" name="physics_yiben" value="{{ config.lines.physics['yiben'] }}">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- History -->
+                <div class="col-md-6 mb-4">
+                    <h6 class="text-info">历史</h6>
+                    <div class="row">
+                        <div class="col-4">
+                            <label class="form-label" for="history_985">985</label>
+                            <input type="number" step="0.1" class="form-control form-control-sm" id="history_985" name="history_985" value="{{ config.lines.history['985'] }}">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label" for="history_211">211</label>
+                            <input type="number" step="0.1" class="form-control form-control-sm" id="history_211" name="history_211" value="{{ config.lines.history['211'] }}">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label" for="history_yiben">一本</label>
+                            <input type="number" step="0.1" class="form-control form-control-sm" id="history_yiben" name="history_yiben" value="{{ config.lines.history['yiben'] }}">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chemistry -->
+                <div class="col-md-6 mb-4">
+                    <h6 class="text-info">化学 - 原始分</h6>
+                    <div class="row">
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="chemistry_raw_985" value="{{ config.lines.chemistry_raw['985'] }}" aria-label="化学原始分985线">
+                        </div>
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="chemistry_raw_211" value="{{ config.lines.chemistry_raw['211'] }}" aria-label="化学原始分211线">
+                        </div>
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="chemistry_raw_yiben" value="{{ config.lines.chemistry_raw['yiben'] }}" aria-label="化学原始分一本线">
+                        </div>
+                    </div>
+                    <h6 class="text-info mt-2">化学 - 赋分</h6>
+                    <div class="row">
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="chemistry_scaled_985" value="{{ config.lines.chemistry_scaled['985'] }}" aria-label="化学赋分985线">
+                        </div>
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="chemistry_scaled_211" value="{{ config.lines.chemistry_scaled['211'] }}" aria-label="化学赋分211线">
+                        </div>
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="chemistry_scaled_yiben" value="{{ config.lines.chemistry_scaled['yiben'] }}" aria-label="化学赋分一本线">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Biology -->
+                <div class="col-md-6 mb-4">
+                    <h6 class="text-info">生物 - 原始分</h6>
+                    <div class="row">
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="biology_raw_985" value="{{ config.lines.biology_raw['985'] }}" aria-label="生物原始分985线">
+                        </div>
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="biology_raw_211" value="{{ config.lines.biology_raw['211'] }}" aria-label="生物原始分211线">
+                        </div>
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="biology_raw_yiben" value="{{ config.lines.biology_raw['yiben'] }}" aria-label="生物原始分一本线">
+                        </div>
+                    </div>
+                    <h6 class="text-info mt-2">生物 - 赋分</h6>
+                    <div class="row">
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="biology_scaled_985" value="{{ config.lines.biology_scaled['985'] }}" aria-label="生物赋分985线">
+                        </div>
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="biology_scaled_211" value="{{ config.lines.biology_scaled['211'] }}" aria-label="生物赋分211线">
+                        </div>
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="biology_scaled_yiben" value="{{ config.lines.biology_scaled['yiben'] }}" aria-label="生物赋分一本线">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Politics -->
+                <div class="col-md-6 mb-4">
+                    <h6 class="text-info">政治 - 原始分</h6>
+                    <div class="row">
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="politics_raw_985" value="{{ config.lines.politics_raw['985'] }}" aria-label="政治原始分985线">
+                        </div>
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="politics_raw_211" value="{{ config.lines.politics_raw['211'] }}" aria-label="政治原始分211线">
+                        </div>
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="politics_raw_yiben" value="{{ config.lines.politics_raw['yiben'] }}" aria-label="政治原始分一本线">
+                        </div>
+                    </div>
+                    <h6 class="text-info mt-2">政治 - 赋分</h6>
+                    <div class="row">
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="politics_scaled_985" value="{{ config.lines.politics_scaled['985'] }}" aria-label="政治赋分985线">
+                        </div>
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="politics_scaled_211" value="{{ config.lines.politics_scaled['211'] }}" aria-label="政治赋分211线">
+                        </div>
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="politics_scaled_yiben" value="{{ config.lines.politics_scaled['yiben'] }}" aria-label="政治赋分一本线">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Geography -->
+                <div class="col-md-6 mb-4">
+                    <h6 class="text-info">地理 - 原始分</h6>
+                    <div class="row">
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="geography_raw_985" value="{{ config.lines.geography_raw['985'] }}" aria-label="地理原始分985线">
+                        </div>
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="geography_raw_211" value="{{ config.lines.geography_raw['211'] }}" aria-label="地理原始分211线">
+                        </div>
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="geography_raw_yiben" value="{{ config.lines.geography_raw['yiben'] }}" aria-label="地理原始分一本线">
+                        </div>
+                    </div>
+                    <h6 class="text-info mt-2">地理 - 赋分</h6>
+                    <div class="row">
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="geography_scaled_985" value="{{ config.lines.geography_scaled['985'] }}" aria-label="地理赋分985线">
+                        </div>
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="geography_scaled_211" value="{{ config.lines.geography_scaled['211'] }}" aria-label="地理赋分211线">
+                        </div>
+                        <div class="col-4">
+                            <input type="number" step="0.1" class="form-control form-control-sm" name="geography_scaled_yiben" value="{{ config.lines.geography_scaled['yiben'] }}" aria-label="地理赋分一本线">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Submit Buttons -->
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-check-lg me-1"></i>保存设置
+        </button>
+        <a href="{{ url_for('main.statistics_page') }}" class="btn btn-secondary btn-lg">
+            <i class="bi bi-arrow-left me-1"></i>返回统计分析
+        </a>
+    </div>
+</form>
+{% endblock %}

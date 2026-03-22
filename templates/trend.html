@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}趋势分析 - 高中成绩分析系统{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<style>
+    .rank-up { color: #198754; font-weight: bold; }
+    .rank-down { color: #dc3545; font-weight: bold; }
+    .rank-same { color: #6c757d; }
+    .trend-card { transition: transform 0.2s; }
+    .trend-card:hover { transform: translateY(-2px); }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-graph-up me-2"></i>趋势分析</h2>
+
+{% if loaded_files|length < 2 %}
+<div class="card">
+    <div class="card-body">
+        <div class="alert alert-warning" role="alert">
+            <h4><i class="bi bi-exclamation-triangle me-2"></i>需要至少2个成绩文件</h4>
+            <p>请先上传至少2个成绩文件，才能进行趋势分析对比。</p>
+            <p class="mb-0">当前已上传: <strong>{{ loaded_files|length }}</strong> 个文件</p>
+        </div>
+        <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+            <i class="bi bi-cloud-upload me-1"></i>返回首页上传文件
+        </a>
+    </div>
+</div>
+{% else %}
+
+<!-- Nav tabs -->
+<ul class="nav nav-tabs mb-4" id="trendTabs" role="tablist" aria-label="趋势分析选项卡">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link {% if not student_query %}active{% endif %}" 
+                id="compare-tab" 
+                data-bs-toggle="tab" 
+                data-bs-target="#compare" 
+                type="button" 
+                role="tab" 
+                aria-controls="compare" 
+                aria-selected="{{ 'true' if not student_query else 'false' }}">
+            <i class="bi bi-arrow-left-right me-1"></i>两次成绩比较
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link {% if student_query %}active{% endif %}" 
+                id="trend-tab" 
+                data-bs-toggle="tab" 
+                data-bs-target="#trend" 
+                type="button" 
+                role="tab" 
+                aria-controls="trend" 
+                aria-selected="{{ 'true' if student_query else 'false' }}">
+            <i class="bi bi-graph-up me-1"></i>个人趋势分析
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="trendTabsContent">
+    <!-- Tab 1: Two-exam comparison -->
+    <div class="tab-pane fade {% if not student_query %}show active{% endif %}" id="compare" role="tabpanel" aria-labelledby="compare-tab">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-sliders me-2"></i>选择对比条件</h5>
+            </div>
+            <div class="card-body">
+                <form method="get" action="{{ url_for('main.trend_page') }}">
+                    <input type="hidden" name="student_query" value="">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label" for="exam1"><strong>第一次考试：</strong></label>
+                            <select class="form-select" id="exam1" name="exam1" aria-label="选择第一次考试">
+                                <option value="">请选择...</option>
+                                {% for f in loaded_files %}
+                                <option value="{{ f }}" {% if f == exam1 %}selected{% endif %}>{{ f }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="exam2"><strong>第二次考试：</strong></label>
+                            <select class="form-select" id="exam2" name="exam2" aria-label="选择第二次考试">
+                                <option value="">请选择...</option>
+                                {% for f in loaded_files %}
+                                <option value="{{ f }}" {% if f == exam2 %}selected{% endif %}>{{ f }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="class_id"><strong>班级筛选：</strong></label>
+                            <select class="form-select" id="class_id" name="class_id" aria-label="选择班级">
+                                <option value="">全部学生</option>
+                                {% for c in available_classes %}
+                                <option value="{{ c }}" {% if c == class_id %}selected{% endif %}>{{ c }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <label class="form-label" for="rank_type"><strong>排名类型：</strong></label>
+                            <select class="form-select" id="rank_type" name="rank_type" aria-label="选择排名类型">
+                                <option value="school" {% if rank_type == 'school' %}selected{% endif %}>校名次</option>
+                                <option value="class" {% if rank_type == 'class' %}selected{% endif %}>班名次</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search me-1"></i>开始对比
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% if exam1 and exam2 and exam1 != exam2 %}
+        <!-- Summary -->
+        {% if summary %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>班级整体情况: {{ exam1 }} vs {{ exam2 }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h6>总人数</h6>
+                        <h3>{{ summary.total_students }}</h3>
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="rank-up">进步人数 <i class="bi bi-arrow-up"></i></h6>
+                        <h3 class="rank-up">{{ summary.improved }}</h3>
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="rank-down">退步人数 <i class="bi bi-arrow-down"></i></h6>
+                        <h3 class="rank-down">{{ summary.declined }}</h3>
+                    </div>
+                    <div class="col-md-3">
+                        <h6>平均分差</h6>
+                        <h3>{% if summary.avg_score_change > 0 %}+{% endif %}{{ "%.1f"|format(summary.avg_score_change) }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Comparison Table -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-table me-2"></i>学生成绩变化: {{ exam1 }} vs {{ exam2 }}</h5>
+                <span class="badge bg-secondary">共 {{ comparison_results|length }} 人</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                    <table class="table table-sm table-hover" aria-label="学生成绩对比表">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th scope="col">学号</th>
+                                <th scope="col">姓名</th>
+                                <th scope="col">班级</th>
+                                <th scope="col">{{ exam1 }}分数</th>
+                                <th scope="col">{{ exam2 }}分数</th>
+                                <th scope="col">分数变化</th>
+                                <th scope="col">{{ exam1 }}{{ '校' if rank_type == 'school' else '班' }}名次</th>
+                                <th scope="col">{{ exam2 }}{{ '校' if rank_type == 'school' else '班' }}名次</th>
+                                <th scope="col">名次变化</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in comparison_results %}
+                            <tr>
+                                <td>{{ r.student_id }}</td>
+                                <td>{{ r.name }}</td>
+                                <td>{{ r.class_id|int if r.class_id else '-' }}</td>
+                                <td>{{ "%.1f"|format(r.exam1_score) if r.exam1_score else '-' }}</td>
+                                <td>{{ "%.1f"|format(r.exam2_score) if r.exam2_score else '-' }}</td>
+                                <td class="{% if r.score_change and r.score_change > 0 %}rank-up{% elif r.score_change and r.score_change < 0 %}rank-down{% else %}rank-same{% endif %}">
+                                    {% if r.score_change %}{% if r.score_change > 0 %}+{% endif %}{{ "%.1f"|format(r.score_change) }}{% else %}-{% endif %}
+                                </td>
+                                <td>{{ r.exam1_rank if r.exam1_rank else '-' }}</td>
+                                <td>{{ r.exam2_rank if r.exam2_rank else '-' }}</td>
+                                <td class="{% if r.rank_change and r.rank_change > 0 %}rank-up{% elif r.rank_change and r.rank_change < 0 %}rank-down{% else %}rank-same{% endif %}">
+                                    {% if r.rank_change is not none %}{% if r.rank_change > 0 %}+{% endif %}{{ r.rank_change }}{% else %}-{% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% elif exam1 == exam2 and exam1 %}
+        <div class="alert alert-warning" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>请选择两个不同的成绩文件进行对比。
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Tab 2: Student trend analysis -->
+    <div class="tab-pane fade {% if student_query %}show active{% endif %}" id="trend" role="tabpanel" aria-labelledby="trend-tab">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person-search me-2"></i>查询学生成绩趋势</h5>
+            </div>
+            <div class="card-body">
+                <form method="get" action="{{ url_for('main.trend_page') }}">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label" for="trend_exams"><strong>选择考试（可多选）：</strong></label>
+                            <select class="form-select" id="trend_exams" name="trend_exams" multiple size="3" aria-label="选择要查看的考试">
+                                {% for f in loaded_files %}
+                                <option value="{{ f }}">{{ f }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">按住Ctrl可多选</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="student_query"><strong>输入学号或姓名：</strong></label>
+                            <input type="text" class="form-control" id="student_query" name="student_query" placeholder="请输入学号或姓名" value="{{ student_query }}" aria-label="输入学号或姓名搜索">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="student_rank_type"><strong>排名类型：</strong></label>
+                            <select class="form-select" id="student_rank_type" name="student_rank_type" aria-label="选择排名类型">
+                                <option value="school" {% if student_rank_type == 'school' %}selected{% endif %}>校名次</option>
+                                <option value="class" {% if student_rank_type == 'class' %}selected{% endif %}>班名次</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search me-1"></i>查询
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% if student_trend %}
+        <!-- Student Info -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person me-2"></i>学生: {{ student_trend[0].student_name }} ({{ student_trend[0].class_id }})</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-1"><strong>学号:</strong> {{ student_query }}</p>
+                <p class="mb-0"><strong>班级:</strong> {{ student_trend[0].class_id }}</p>
+            </div>
+        </div>
+        
+        <!-- Trend Chart -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>成绩趋势图</h5>
+            </div>
+            <div class="card-body">
+                <div id="trendChart" style="width: 100%; height: 400px;" role="img" aria-label="学生成绩趋势图表"></div>
+            </div>
+        </div>
+        
+        <!-- Trend Table -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-table me-2"></i>详细数据</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm" aria-label="学生成绩趋势详细数据">
+                    <thead>
+                        <tr>
+                            <th scope="col">考试</th>
+                            <th scope="col">总分</th>
+                            <th scope="col">{{ '校名次' if student_rank_type == 'school' else '班名次' }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in student_trend %}
+                        <tr>
+                            <td>{{ t.exam }}</td>
+                            <td>{{ "%.1f"|format(t.score) if t.score else '-' }}</td>
+                            <td>{{ t.rank if t.rank else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <script>
+        // Generate chart data - using tojson for XSS protection
+        var exams = [{% for t in student_trend %}{{ t.exam|tojson }}{% if not loop.last %}, {% endif %}{% endfor %}];
+        var scores = [{% for t in student_trend %}{{ t.score|tojson if t.score is not none else 'null' }}{% if not loop.last %}, {% endif %}{% endfor %}];
+        var ranks = [{% for t in student_trend %}{{ t.rank|tojson if t.rank is not none else 'null' }}{% if not loop.last %}, {% endif %}{% endfor %}];
+        
+        var rankLabel = {{ ("校名次" if student_rank_type == "school" else "班名次")|tojson }};
+        
+        var trace1 = {
+            x: exams,
+            y: scores,
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: '总分',
+            line: {color: '#0d6efd', width: 2},
+            marker: {size: 10}
+        };
+        
+        var trace2 = {
+            x: exams,
+            y: ranks,
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: rankLabel,
+            yaxis: 'y2',
+            line: {color: '#dc3545', width: 2},
+            marker: {size: 10}
+        };
+        
+        var layout = {
+            yaxis: {title: '分数'},
+            yaxis2: {
+                title: rankLabel,
+                overlaying: 'y',
+                side: 'right',
+                autorange: 'reversed'
+            },
+            margin: {l: 60, r: 60, t: 30, b: 60}
+        };
+        
+        Plotly.newPlot('trendChart', [trace1, trace2], layout);
+        </script>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

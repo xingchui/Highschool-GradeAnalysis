@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}排名查询 - 高中成绩分析系统{% endblock %}
+
+{% block content %}
+{% if loaded_files|length > 1 %}
+<div class="card mb-4">
+    <div class="card-body file-selector">
+        <label class="form-label mb-2"><strong><i class="bi bi-folder2-open me-2"></i>选择成绩文件：</strong></label>
+        <div class="btn-group" role="group" aria-label="选择成绩文件">
+            {% for f in loaded_files %}
+            <a href="{{ url_for('main.select_file', filename=f) }}" 
+               class="btn {% if f == filename %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+               aria-pressed="{{ 'true' if f == filename else 'false' }}">
+                {{ f }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<h2 class="mb-4"><i class="bi bi-trophy me-2"></i>全校排名 - {{ filename }}</h2>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-list-ol me-2"></i>学生排名列表</span>
+        <span class="badge bg-secondary">第 {{ page }} / {{ total_pages }} 页</span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" aria-label="学生排名表">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col" style="width: 100px;">排名</th>
+                        <th scope="col">姓名</th>
+                        <th scope="col">班级</th>
+                        <th scope="col">总分(赋分)</th>
+                        <th scope="col">班级排名</th>
+                        <th scope="col">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>
+                            {% set rank = (page - 1) * 50 + loop.index %}
+                            {% if rank <= 3 %}
+                            <span class="badge bg-{% if rank == 1 %}warning{% elif rank == 2 %}secondary{% else %}danger{% endif %} fs-6">
+                                {{ rank }}
+                            </span>
+                            {% else %}
+                            {{ rank }}
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ student.name }}</strong></td>
+                        <td>{{ student.class_id }}</td>
+                        <td><span class="badge bg-primary">{{ student.total_scaled }}</span></td>
+                        <td>{{ student.total_scaled_class_rank }}</td>
+                        <td>
+                            <a href="{{ url_for('main.student_detail', student_id=student.student_id) }}" 
+                               class="btn btn-sm btn-outline-info"
+                               aria-label="查看{{ student.name }}的详细信息">
+                                <i class="bi bi-person"></i> 详情
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if total_pages > 1 %}
+        <nav aria-label="排名分页导航" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page > 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page - 1 }}" aria-label="上一页">
+                        <i class="bi bi-chevron-left"></i> 上一页
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for p in range(1, total_pages + 1) %}
+                    {% if p == page %}
+                    <li class="page-item active" aria-current="page">
+                        <span class="page-link">{{ p }}</span>
+                    </li>
+                    {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+                    </li>
+                    {% elif p == page - 3 or p == page + 3 %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page < total_pages %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page + 1 }}" aria-label="下一页">
+                        下一页 <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quick Navigation -->
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="card-title"><i class="bi bi-lightbulb me-2 text-warning"></i>快速导航</h5>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-primary">
+                <i class="bi bi-speedometer2 me-1"></i>返回概览
+            </a>
+            <a href="{{ url_for('main.statistics_page') }}" class="btn btn-outline-primary">
+                <i class="bi bi-bar-chart me-1"></i>统计分析
+            </a>
+            <a href="{{ url_for('main.trend_page') }}" class="btn btn-outline-primary">
+                <i class="bi bi-graph-up me-1"></i>趋势分析
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

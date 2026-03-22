@@ -1,0 +1,20 @@
+# Grade Analysis Web Application Dependencies
+
+# Web Framework
+Flask==3.1.2
+Werkzeug==3.1.5
+
+# Data Processing
+pandas==2.3.3
+openpyxl==3.1.5
+xlrd==2.0.2
+
+# Visualization
+plotly==6.5.2
+
+# Packaging
+pyinstaller==6.19.0
+
+# Code Quality (optional)
+flake8==8.0.0
+black==26.1.0

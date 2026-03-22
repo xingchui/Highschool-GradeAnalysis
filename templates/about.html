@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}关于 - 高中成绩分析系统{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-info-circle me-2"></i>关于系统</h2>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h4 class="card-title">
+                    <i class="bi bi-graph-up-arrow me-2 text-primary"></i>
+                    高中成绩分析系统
+                </h4>
+                <p class="text-muted">版本: 2.0.0</p>
+                <p>这是一个基于Python Flask框架开发的高中成绩分析系统，旨在帮助教师更好地分析学生成绩数据，提供全方位的统计分析和趋势追踪功能。</p>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-stars me-2"></i>主要功能</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex align-items-center">
+                        <i class="bi bi-cloud-upload text-primary me-3 fs-4"></i>
+                        <div>
+                            <strong>Excel成绩文件上传和解析</strong>
+                            <p class="mb-0 text-muted small">支持多种Excel格式，自动识别数据结构</p>
+                        </div>
+                    </li>
+                    <li class="list-group-item d-flex align-items-center">
+                        <i class="bi bi-trophy text-warning me-3 fs-4"></i>
+                        <div>
+                            <strong>学生排名</strong>
+                            <p class="mb-0 text-muted small">全校排名和班级排名，支持分页查看</p>
+                        </div>
+                    </li>
+                    <li class="list-group-item d-flex align-items-center">
+                        <i class="bi bi-bar-chart text-success me-3 fs-4"></i>
+                        <div>
+                            <strong>985/211/一本分数线统计分析</strong>
+                            <p class="mb-0 text-muted small">按班级、科目统计上线人数和上线率</p>
+                        </div>
+                    </li>
+                    <li class="list-group-item d-flex align-items-center">
+                        <i class="bi bi-gear text-secondary me-3 fs-4"></i>
+                        <div>
+                            <strong>单科分数线设置</strong>
+                            <p class="mb-0 text-muted small">支持语数外150分制及各科目自定义分数线</p>
+                        </div>
+                    </li>
+                    <li class="list-group-item d-flex align-items-center">
+                        <i class="bi bi-graph-up text-info me-3 fs-4"></i>
+                        <div>
+                            <strong>学生成绩趋势分析</strong>
+                            <p class="mb-0 text-muted small">对比多次考试成绩，追踪学生进步情况</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-code-slash me-2"></i>技术栈</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">后端</h6>
+                        <ul class="mb-3">
+                            <li>Python 3.10+</li>
+                            <li>Flask 3.x</li>
+                            <li>Pandas</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-primary">前端</h6>
+                        <ul class="mb-3">
+                            <li>Bootstrap 5</li>
+                            <li>Plotly.js</li>
+                            <li>Bootstrap Icons</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-file-text me-2"></i>许可证</h5>
+            </div>
+            <div class="card-body">
+                <p>本项目基于 <strong>MIT 许可证</strong> 开源。</p>
+                <p class="mb-0">版权所有 © 2024</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-link-45deg me-2"></i>快速链接</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('main.index') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-house me-1"></i>返回首页
+                    </a>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-speedometer2 me-1"></i>数据分析概览
+                    </a>
+                    <a href="{{ url_for('main.config_page') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-gear me-1"></i>分数线设置
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-body text-center">
+                <i class="bi bi-emoji-smile fs-1 text-primary"></i>
+                <p class="mt-2 mb-0">感谢使用！</p>
+                <small class="text-muted">如有问题请联系我们</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

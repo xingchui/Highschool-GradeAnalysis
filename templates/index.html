@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - 高中成绩分析系统{% endblock %}
+
+{% block description %}上传Excel成绩文件，开始分析学生考试数据{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-area {
+        border: 3px dashed var(--secondary-color);
+        border-radius: 16px;
+        padding: 60px 40px;
+        text-align: center;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .upload-area:hover {
+        background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        border-color: #2980b9;
+        transform: translateY(-2px);
+    }
+    
+    .upload-area.dragover {
+        border-color: var(--success-color);
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    }
+    
+    .upload-icon {
+        font-size: 4rem;
+        color: var(--secondary-color);
+        margin-bottom: 20px;
+    }
+    
+    .feature-list {
+        list-style: none;
+        padding-left: 0;
+    }
+    
+    .feature-list li {
+        padding: 12px 0;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        align-items: center;
+    }
+    
+    .feature-list li:last-child {
+        border-bottom: none;
+    }
+    
+    .feature-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, var(--secondary-color) 0%, #2980b9 100%);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        margin-right: 15px;
+        flex-shrink: 0;
+    }
+    
+    .feature-text h5 {
+        margin-bottom: 4px;
+        font-weight: 600;
+    }
+    
+    .feature-text p {
+        margin-bottom: 0;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <!-- Upload Card -->
+        <div class="card">
+            <div class="card-body p-5">
+                <h2 class="text-center mb-4">
+                    <i class="bi bi-cloud-upload me-2"></i>
+                    上传成绩文件
+                </h2>
+                <form action="{{ url_for('main.upload_file') }}" 
+                      method="post" 
+                      enctype="multipart/form-data"
+                      id="upload-form">
+                    <div class="upload-area" 
+                         id="drop-zone"
+                         role="button"
+                         tabindex="0"
+                         aria-label="点击选择文件或拖拽文件到此处上传">
+                        <div class="upload-icon">
+                            <i class="bi bi-folder2-open"></i>
+                        </div>
+                        <p class="mb-2 fs-5">点击选择文件或拖拽文件到此处</p>
+                        <p class="text-muted mb-0">支持 .xls 和 .xlsx 格式，最大 16MB</p>
+                        <input type="file" 
+                               id="file" 
+                               name="file" 
+                               accept=".xls,.xlsx" 
+                               class="d-none"
+                               aria-describedby="file-help"
+                               onchange="this.form.submit()">
+                    </div>
+                    <div id="file-help" class="form-text text-center mt-3">
+                        选择文件后将自动上传并分析
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Features Card -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h4 class="mb-4">
+                    <i class="bi bi-stars me-2"></i>
+                    功能说明
+                </h4>
+                <ul class="feature-list">
+                    <li>
+                        <div class="feature-icon">
+                            <i class="bi bi-trophy"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h5>排名查询</h5>
+                            <p>查看全校和班级排名，支持分页浏览</p>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="feature-icon">
+                            <i class="bi bi-bar-chart"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h5>统计分析</h5>
+                            <p>查看985/211/一本分数线统计，分析各班级表现</p>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="feature-icon">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h5>趋势分析</h5>
+                            <p>对比多次考试成绩，查看学生成绩变化趋势</p>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="feature-icon">
+                            <i class="bi bi-gear"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h5>分数线设置</h5>
+                            <p>自定义各科分数线，适应不同学校标准</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Quick Tips -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-lightbulb me-2 text-warning"></i>
+                    使用提示
+                </h5>
+                <ul class="mb-0">
+                    <li>确保Excel文件包含学生姓名和成绩列</li>
+                    <li>支持多种格式：新格式、文科格式、旧格式</li>
+                    <li>上传后可随时切换查看不同文件的数据</li>
+                    <li>所有数据仅保存在当前会话中，刷新页面后清除</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file');
+    
+    // Click to open file dialog
+    dropZone.addEventListener('click', function() {
+        fileInput.click();
+    });
+    
+    // Keyboard accessibility
+    dropZone.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fileInput.click();
+        }
+    });
+    
+    // Drag and drop support
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, function() {
+            dropZone.classList.add('dragover');
+        }, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, function() {
+            dropZone.classList.remove('dragover');
+        }, false);
+    });
+    
+    dropZone.addEventListener('drop', function(e) {
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            document.getElementById('upload-form').submit();
+        }
+    }, false);
+});
+</script>
+{% endblock %}
