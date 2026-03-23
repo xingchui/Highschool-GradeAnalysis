@@ -47,6 +47,9 @@ def create_app(config: Optional[Config] = None) -> Flask:
     
     app.config.from_object(config)
     
+    # Initialize config (sets UPLOAD_FOLDER dynamically)
+    config.init_app(app)
+    
     # Initialize extensions
     init_extensions(app)
     

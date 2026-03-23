@@ -35,8 +35,8 @@ class Config:
     # Flask core
     SECRET_KEY = os.environ.get('SECRET_KEY', 'grade-analysis-secret-key-change-in-production')
     
-    # File upload settings - use get_base_path() for PyInstaller compatibility
-    UPLOAD_FOLDER = os.path.join(get_base_path(), 'data')
+    # File upload settings - will be set dynamically in init_app
+    UPLOAD_FOLDER = None  # Will be set at runtime
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max
     ALLOWED_EXTENSIONS = {'xls', 'xlsx'}
     
@@ -57,8 +57,13 @@ class Config:
         Args:
             app: Flask application instance.
         """
+        # Set UPLOAD_FOLDER dynamically at runtime for PyInstaller compatibility
+        # This ensures the path is computed when the app actually starts
+        upload_folder = os.path.join(get_base_path(), 'data')
+        app.config['UPLOAD_FOLDER'] = upload_folder
+        
         # Create upload folder if not exists
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        os.makedirs(upload_folder, exist_ok=True)
 
 
 class DevelopmentConfig(Config):
