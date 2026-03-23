@@ -7,8 +7,9 @@ This module provides the create_app factory function for the Flask application.
 from flask import Flask
 from typing import Optional, Dict, Any
 import os
+import sys
 
-from app.config import Config, DevelopmentConfig, ProductionConfig
+from app.config import Config, DevelopmentConfig, ProductionConfig, get_base_path
 from app.extensions import init_extensions
 from app.routes import register_blueprints
 from app.core.data_service import DataService
@@ -23,9 +24,22 @@ def create_app(config: Optional[Config] = None) -> Flask:
     Returns:
         Configured Flask application instance.
     """
+    # Get base path for PyInstaller compatibility
+    base_path = get_base_path()
+    
+    # For PyInstaller, templates and static are bundled and accessible via sys._MEIPASS
+    if getattr(sys, 'frozen', False):
+        # Running as PyInstaller bundle
+        template_folder = os.path.join(sys._MEIPASS, 'templates')
+        static_folder = os.path.join(sys._MEIPASS, 'static')
+    else:
+        # Running as script
+        template_folder = os.path.join(base_path, 'templates')
+        static_folder = os.path.join(base_path, 'static')
+    
     app = Flask(__name__, 
-                template_folder='../templates',
-                static_folder='../static')
+                template_folder=template_folder,
+                static_folder=static_folder)
     
     # Load configuration
     if config is None:

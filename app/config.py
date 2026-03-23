@@ -5,7 +5,25 @@ This module defines configuration classes for different environments.
 """
 
 import os
+import sys
 from typing import Dict, Any
+
+
+def get_base_path() -> str:
+    """Get the base path for the application.
+    
+    When running as a PyInstaller bundle, use the executable's directory.
+    When running as a script, use the project root directory.
+    
+    Returns:
+        Base path string.
+    """
+    if getattr(sys, 'frozen', False):
+        # Running as PyInstaller bundle
+        return os.path.dirname(sys.executable)
+    else:
+        # Running as script - go up one level from app/ to project root
+        return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 class Config:
@@ -17,8 +35,8 @@ class Config:
     # Flask core
     SECRET_KEY = os.environ.get('SECRET_KEY', 'grade-analysis-secret-key-change-in-production')
     
-    # File upload settings
-    UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+    # File upload settings - use get_base_path() for PyInstaller compatibility
+    UPLOAD_FOLDER = os.path.join(get_base_path(), 'data')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max
     ALLOWED_EXTENSIONS = {'xls', 'xlsx'}
     
