@@ -56,32 +56,34 @@ def parse_excel(file_path: str, sheet_name: Optional[str] = None) -> pd.DataFram
 
 
 def _parse_xls(file_path: str, sheet_name: Optional[str] = None) -> pd.DataFrame:
-    """Parse an .xls file."""
-    xls = pd.ExcelFile(file_path)
+    """Parse an .xls file (BIFF format)."""
+    # Use xlrd engine for .xls files
+    xls = pd.ExcelFile(file_path, engine='xlrd')
     
     if sheet_name is None:
         sheet_name = xls.sheet_names[0]
     
-    df = pd.read_excel(file_path, sheet_name=sheet_name, header=1)
+    df = pd.read_excel(file_path, sheet_name=sheet_name, header=1, engine='xlrd')
     return _clean_dataframe(df)
 
 
 def _parse_xlsx(file_path: str, sheet_name: Optional[str] = None) -> pd.DataFrame:
-    """Parse an .xlsx file."""
-    xls = pd.ExcelFile(file_path)
+    """Parse an .xlsx file (Office Open XML format)."""
+    # Use openpyxl engine for .xlsx files
+    xls = pd.ExcelFile(file_path, engine='openpyxl')
     
     if sheet_name is None:
         sheet_name = xls.sheet_names[0]
     
     # First read to detect format (check if it has 2-row header)
-    df_raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+    df_raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None, engine='openpyxl')
     fmt = detect_excel_format(df_raw)
     
     # Liberal format has 2-row headers, use header=None
     if fmt == 'liberal':
-        df = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+        df = pd.read_excel(file_path, sheet_name=sheet_name, header=None, engine='openpyxl')
     else:
-        df = pd.read_excel(file_path, sheet_name=sheet_name, header=1)
+        df = pd.read_excel(file_path, sheet_name=sheet_name, header=1, engine='openpyxl')
     
     return _clean_dataframe(df)
 
@@ -384,7 +386,11 @@ def parse_all_sheets(file_path: str) -> dict[str, pd.DataFrame]:
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"File not found: {file_path}")
     
-    xls = pd.ExcelFile(file_path)
+    # Determine engine based on file extension
+    file_ext = os.path.splitext(file_path)[1].lower()
+    engine = 'xlrd' if file_ext == '.xls' else 'openpyxl'
+    
+    xls = pd.ExcelFile(file_path, engine=engine)
     result = {}
     
     for sheet_name in xls.sheet_names:
