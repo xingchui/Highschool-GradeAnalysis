@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}服务器错误{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="display-1 text-danger">500</h1>
+    <h2>服务器内部错误</h2>
+    <p class="text-muted">服务器处理请求时发生错误，请稍后重试。</p>
+    <a href="/" class="btn btn-primary">返回首页</a>
+</div>
+{% endblock %}

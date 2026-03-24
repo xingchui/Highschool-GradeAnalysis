@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Any, Tuple
 import pandas as pd
 
 import ranking
-import statistics as stats_module
+import grade_statistics as stats_module
 import trend as trend_module
 
 

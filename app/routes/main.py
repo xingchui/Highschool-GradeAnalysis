@@ -13,7 +13,7 @@ from io import BytesIO
 
 import parser
 import ranking
-import statistics as stats_module
+import grade_statistics as stats_module
 import trend as trend_module
 
 # Create blueprint

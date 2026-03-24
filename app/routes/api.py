@@ -6,7 +6,7 @@ Handles API endpoints for data retrieval.
 
 from flask import Blueprint, jsonify, current_app
 import ranking
-import statistics as stats_module
+import grade_statistics as stats_module
 
 # Create blueprint
 api_bp = Blueprint('api', __name__)

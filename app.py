@@ -13,7 +13,7 @@ from werkzeug.utils import secure_filename
 # Import local modules
 import parser
 import ranking
-import statistics as stats_module
+import grade_statistics as stats_module
 import trend as trend_module
 from io import BytesIO
 
