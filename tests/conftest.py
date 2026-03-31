@@ -75,6 +75,21 @@ def data_service(app, sample_dataframe):
     Returns:
         DataService instance with sample data loaded.
     """
-    app.data_service.load_file('test_exam.xlsx', sample_dataframe, 'test_exam.xlsx')
-    app.data_service.set_current_file('test_exam.xlsx')
-    return app.data_service
+    # For testing, create a simple data store and DataService
+    test_data = {
+        'files': {},
+        'file_metadata': {},
+        'current_file_key': None,
+        'created_at': None
+    }
+    
+    from app.core.data_service import DataService, FileMetadata
+    from datetime import datetime
+    import uuid
+    
+    # Manually create the data service with test data
+    data_service = DataService(test_data)
+    data_service.load_file('test_exam.xlsx', sample_dataframe, 'test_exam.xlsx')
+    data_service.set_current_file('test_exam.xlsx')
+    
+    return data_service

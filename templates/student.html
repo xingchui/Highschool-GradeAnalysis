@@ -45,7 +45,7 @@
                 <hr>
                 
                 <div class="d-flex gap-2">
-                    <a href="{{ url_for('main.rankings_page') }}" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('rankings.rankings_page') }}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left me-1"></i>返回排名
                     </a>
                     <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-primary">
@@ -74,10 +74,10 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
-                    <a href="{{ url_for('main.trend_page') }}?student_query={{ student.student_id }}" class="btn btn-outline-info">
+                    <a href="{{ url_for('trend.trend_page') }}?student_query={{ student.student_id }}" class="btn btn-outline-info">
                         <i class="bi bi-graph-up me-1"></i>查看成绩趋势
                     </a>
-                    <a href="{{ url_for('main.rankings_page') }}" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('rankings.rankings_page') }}" class="btn btn-outline-secondary">
                         <i class="bi bi-list-ol me-1"></i>查看全部排名
                     </a>
                 </div>

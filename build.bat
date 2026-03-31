@@ -1,8 +1,8 @@
 @echo off
-REM Build script for Grade Analysis App v2.0
+REM Build script for Grade Analysis App v3.0
 
 echo ============================================
-echo Grade Analysis App v2.0 - Build Script
+echo Grade Analysis App v3.0 - Build Script
 echo ============================================
 echo.
 
@@ -49,6 +49,11 @@ pyinstaller --onefile ^
     --hidden-import=app.routes ^
     --hidden-import=app.routes.main ^
     --hidden-import=app.routes.api ^
+    --hidden-import=app.routes.rankings ^
+    --hidden-import=app.routes.statistics ^
+    --hidden-import=app.routes.trend ^
+    --hidden-import=app.routes.config ^
+    --hidden-import=app.utils ^
     run.py
 
 if errorlevel 1 (
@@ -62,5 +67,6 @@ echo.
 echo ============================================
 echo Build complete!
 echo Output: dist\GradeAnalysisApp.exe
+echo Version: 3.0.0
 echo ============================================
 pause

@@ -2,6 +2,9 @@
 Ranking Engine Module
 
 This module handles calculating rankings for students at both school and class levels.
+
+MIT License
+Copyright (c) 2026 Grade Analysis App
 """
 
 import pandas as pd
@@ -75,8 +78,11 @@ def get_top_students(df: pd.DataFrame, score_column: str = 'total_scaled',
         by_class: If True, get top N per class.
         
     Returns:
-        DataFrame with top N students.
+        DataFrame with top N students, or empty DataFrame if column missing.
     """
+    if score_column not in df.columns:
+        return pd.DataFrame()  # Return empty DataFrame if column missing
+    
     if by_class and 'class_id' in df.columns:
         return df.groupby('class_id').apply(
             lambda x: x.nlargest(n, score_column)
@@ -94,10 +100,19 @@ def get_class_rankings(df: pd.DataFrame, class_id: int) -> pd.DataFrame:
         
     Returns:
         DataFrame with students in the specified class, ranked by total score.
+        Returns empty DataFrame if required columns missing.
     """
+    if 'class_id' not in df.columns or 'total_scaled' not in df.columns:
+        return pd.DataFrame()
+    
     class_df = df[df['class_id'] == class_id].copy()
     class_df = calculate_rankings(class_df, 'total_scaled')
-    return class_df.sort_values('total_scaled_school_rank')
+    
+    rank_col = 'total_scaled_school_rank'
+    if rank_col not in class_df.columns:
+        return class_df
+    
+    return class_df.sort_values(rank_col)
 
 
 def get_school_rankings(df: pd.DataFrame) -> pd.DataFrame:

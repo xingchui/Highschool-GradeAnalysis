@@ -3,6 +3,9 @@ Grade Analysis Service
 
 This module provides a service layer for grade analysis operations,
 encapsulating business logic and providing a clean interface for routes.
+
+MIT License
+Copyright (c) 2026 Grade Analysis App
 """
 
 from typing import Dict, List, Optional, Any, Tuple
@@ -11,6 +14,7 @@ import pandas as pd
 import ranking
 import grade_statistics as stats_module
 import trend as trend_module
+import charts as charts_module
 
 
 class GradeAnalysisService:
@@ -322,3 +326,192 @@ class GradeAnalysisService:
             List of exam names.
         """
         return trend_module.get_exam_list()
+
+    # ==================== Chart Methods ====================
+    
+    def get_chart_list(self) -> List[Dict[str, str]]:
+        """Get list of available chart types.
+        
+        Returns:
+            List of chart type info dicts.
+        """
+        return charts_module.get_chart_list()
+    
+    def generate_chart(self, chart_type: str, **kwargs) -> str:
+        """Generate a chart based on type and parameters.
+        
+        Args:
+            chart_type: Type of chart to generate.
+            **kwargs: Additional parameters for the chart.
+            
+        Returns:
+            HTML string of the chart.
+        """
+        current_data = self.data_service.get_current_data()
+        if current_data is None:
+            return "<p>无数据可用</p>"
+        
+        chart_generators = {
+            'box': self._generate_box_chart,
+            'heatmap': self._generate_heatmap_chart,
+            'scatter': self._generate_scatter_chart,
+            'violin': self._generate_violin_chart,
+            'correlation': self._generate_correlation_chart,
+            'distribution': self._generate_distribution_chart,
+            'rank_change': self._generate_rank_change_chart,
+            'trend': self._generate_trend_chart,
+            'radar': self._generate_radar_chart,
+        }
+        
+        generator = chart_generators.get(chart_type)
+        if generator:
+            return generator(current_data, **kwargs)
+        
+        return "<p>未知的图表类型</p>"
+    
+    def _generate_box_chart(self, df: pd.DataFrame, **kwargs) -> str:
+        """Generate box plot."""
+        score_column = kwargs.get('score_column', 'total_scaled')
+        group_column = kwargs.get('group_column', 'class_id')
+        return charts_module.create_box_plot(df, score_column, group_column)
+    
+    def _generate_heatmap_chart(self, df: pd.DataFrame, **kwargs) -> str:
+        """Generate heatmap chart."""
+        subjects = kwargs.get('subjects', None)
+        aggfunc = kwargs.get('aggfunc', 'mean')
+        return charts_module.create_heatmap(df, columns_subjects=subjects, aggfunc=aggfunc)
+    
+    def _generate_scatter_chart(self, df: pd.DataFrame, **kwargs) -> str:
+        """Generate scatter plot with regression."""
+        x_col = kwargs.get('x_col', 'math')
+        y_col = kwargs.get('y_col', 'physics')
+        show_regression = kwargs.get('show_regression', True)
+        return charts_module.create_scatter_with_regression(
+            df, x_col, y_col, show_regression=show_regression
+        )
+    
+    def _generate_violin_chart(self, df: pd.DataFrame, **kwargs) -> str:
+        """Generate violin plot."""
+        score_column = kwargs.get('score_column', 'total_scaled')
+        group_column = kwargs.get('group_column', 'class_id')
+        return charts_module.create_violin_plot(df, score_column, group_column)
+    
+    def _generate_correlation_chart(self, df: pd.DataFrame, **kwargs) -> str:
+        """Generate correlation matrix."""
+        subjects = kwargs.get('subjects', None)
+        return charts_module.create_correlation_matrix(df, subject_columns=subjects)
+    
+    def _generate_distribution_chart(self, df: pd.DataFrame, **kwargs) -> str:
+        """Generate distribution chart with line overlays."""
+        score_column = kwargs.get('score_column', 'total_scaled')
+        line_config = kwargs.get('line_config', None)
+        return charts_module.create_score_distribution_by_line(
+            df, score_column, line_config=line_config
+        )
+    
+    def _generate_rank_change_chart(self, df: pd.DataFrame, **kwargs) -> str:
+        """Generate rank change chart."""
+        comparison_data = kwargs.get('comparison_data', [])
+        return charts_module.create_class_rank_change_chart(comparison_data)
+    
+    def _generate_trend_chart(self, df: pd.DataFrame, **kwargs) -> str:
+        """Generate score trend distribution chart.
+        
+        For single exam data, shows score distribution as a line chart.
+        For multiple exams, shows score trends across exams.
+        """
+        score_column = kwargs.get('score_column', 'total_scaled')
+        exam_name = kwargs.get('exam_name', '当前考试')
+        
+        # Create trend data from score distribution bins
+        if score_column not in df.columns:
+            return "<p>数据不可用</p>"
+        
+        scores = df[score_column].dropna()
+        if scores.empty:
+            return "<p>无有效数据</p>"
+        
+        # Create bins for score distribution
+        import numpy as np
+        bins = np.linspace(scores.min(), scores.max(), 20)
+        hist, _ = np.histogram(scores, bins=bins)
+        
+        # Format as trend data (score ranges vs count)
+        trend_data = []
+        for i in range(len(bins) - 1):
+            trend_data.append({
+                'exam': f'{int(bins[i])}-{int(bins[i+1])}',
+                'score': int(hist[i]),
+                'rank': None
+            })
+        
+        return charts_module.create_score_trend_chart(
+            trend_data, 
+            subject_name=f"{score_column} 分数段分布"
+        )
+    
+    def _generate_radar_chart(self, df: pd.DataFrame, **kwargs) -> str:
+        """Generate radar chart for subject comparison.
+        
+        Shows average scores per subject as a radar chart.
+        """
+        # Get available subjects
+        subjects = self.get_subjects_list()
+        
+        # Filter to only subject scores (not ranks or totals)
+        subject_cols = [s for s in subjects if s not in ['total_raw', 'total_scaled']]
+        
+        if not subject_cols:
+            return "<p>无学科数据</p>"
+        
+        # Calculate average scores for each subject
+        student_data = {}
+        for col in subject_cols:
+            avg_score = df[col].mean()
+            if not pd.isna(avg_score):
+                student_data[col] = round(float(avg_score), 2)
+        
+        if not student_data:
+            return "<p>无有效数据</p>"
+        
+        return charts_module.create_subject_radar_chart(student_data)
+    
+    def get_subjects_list(self) -> List[str]:
+        """Get list of available subjects in current data.
+        
+        Returns:
+            List of subject column names.
+        """
+        current_data = self.data_service.get_current_data()
+        if current_data is None:
+            return []
+        
+        # Common subject columns
+        subject_cols = ['chinese', 'math', 'english', 'physics', 
+                       'chemistry', 'biology', 'history', 'geography',
+                       'politics', 'total_raw', 'total_scaled']
+        
+        return [col for col in subject_cols if col in current_data.columns]
+    
+    def get_scatter_subjects_pairs(self) -> List[Dict[str, str]]:
+        """Get suggested subject pairs for scatter plot.
+        
+        Returns:
+            List of dicts with x_col and y_col for scatter plots.
+        """
+        subjects = self.get_subjects_list()
+        pairs = []
+        
+        # Common meaningful pairs
+        suggested_pairs = [
+            ('math', 'physics'),
+            ('chinese', 'english'),
+            ('total_scaled', 'physics'),
+            ('math', 'chemistry'),
+        ]
+        
+        for x, y in suggested_pairs:
+            if x in subjects and y in subjects:
+                pairs.append({'x_col': x, 'y_col': y, 'label': f'{x} vs {y}'})
+        
+        return pairs

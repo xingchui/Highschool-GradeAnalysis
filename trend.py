@@ -2,6 +2,9 @@
 Trend Analysis Module
 
 This module handles analyzing student performance trends over multiple exams.
+
+MIT License
+Copyright (c) 2026 Grade Analysis App
 """
 
 import pandas as pd
@@ -131,7 +134,10 @@ def compare_two_exams(exam1_name: str, exam2_name: str, class_id: str = None,
             (merged['class_id_2'].astype(str) == class_id_str)
         ]
     
-    # Calculate rank change (negative = improvement, positive = decline)
+    # Calculate rank change
+    # rank_change = rank1 - rank2
+    # If student improved (rank2 < rank1, e.g., from 10th to 5th), rank_change > 0 (positive)
+    # If student declined (rank2 > rank1, e.g., from 5th to 10th), rank_change < 0 (negative)
     merged['rank_change'] = merged['rank1'] - merged['rank2']
     merged['score_change'] = merged['score2'] - merged['score1']
     
@@ -285,6 +291,8 @@ def get_class_rank_change_summary(exam1_name: str, exam2_name: str, class_id: st
             'avg_score_change': 0,
         }
     
+    # rank_change > 0 means improved (rank decreased, e.g., 10th -> 5th)
+    # rank_change < 0 means declined (rank increased, e.g., 5th -> 10th)
     improved = sum(1 for r in results if r['rank_change'] and r['rank_change'] > 0)
     declined = sum(1 for r in results if r['rank_change'] and r['rank_change'] < 0)
     unchanged = sum(1 for r in results if r['rank_change'] == 0)

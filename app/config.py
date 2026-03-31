@@ -47,6 +47,9 @@ class Config:
     # Data settings
     DATA_EXPIRY_HOURS = 24  # How long to keep session data
     
+    # API Security
+    API_KEY = os.environ.get('API_KEY', '')  # Empty = no auth required (dev mode)
+    
     # Logging
     LOG_LEVEL = 'INFO'
     
@@ -75,7 +78,22 @@ class DevelopmentConfig(Config):
 
 
 class ProductionConfig(Config):
-    """Production configuration."""
+    """Production configuration.
+    
+    Session Storage Notes:
+    - Default: In-memory storage (suitable for single-process, single-server deployments)
+    - For multi-process/multi-server: Set SESSION_TYPE='redis' and install Flask-Session + redis
+    
+    Example Redis configuration:
+        SESSION_TYPE = 'redis'
+        SESSION_REDIS = redis.from_url(os.environ.get('REDIS_URL', 'redis://localhost:6379'))
+        SESSION_KEY_PREFIX = 'grade_analysis:'
+    
+    For most school deployments, in-memory storage is sufficient as:
+    - Data is session-bound and temporary
+    - Typically single-user or small team usage
+    - No need for cross-server session sharing
+    """
     
     DEBUG = False
     LOG_LEVEL = 'WARNING'
@@ -83,6 +101,11 @@ class ProductionConfig(Config):
     
     # Override secret key from environment
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-must-change-this-in-production'
+    
+    # Optional: Redis session storage (uncomment and install deps to enable)
+    # pip install flask-session redis
+    # SESSION_TYPE = 'redis'
+    # SESSION_REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
 
 
 class TestingConfig(Config):

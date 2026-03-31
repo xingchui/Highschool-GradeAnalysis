@@ -3,14 +3,18 @@ Data Service - Session-Bound Data Management
 
 This module provides a centralized data service that replaces global state
 with session-bound data management.
+
+MIT License
+Copyright (c) 2026 Grade Analysis App
 """
 
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 import pandas as pd
-from flask import request, g
+from flask import request, g, session
 import uuid
+import threading
 
 
 @dataclass
@@ -25,30 +29,98 @@ class FileMetadata:
     file_id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
 
 
-class DataService:
-    """Centralized data service for managing loaded files.
+class SessionDataService:
+    """Session-bound data service using Flask session.
     
-    This class replaces the global state in app.py with session-bound data.
-    Each session (browser) has its own data context.
+    Each browser session gets its own isolated data store.
     """
     
-    def __init__(self):
-        """Initialize the data service."""
-        # Session storage key (generated per session)
-        self._session_id: Optional[str] = None
-        self._files: Dict[str, pd.DataFrame] = {}
-        self._file_metadata: Dict[str, FileMetadata] = {}
-        self._current_file_key: Optional[str] = None
+    def __init__(self, app=None):
+        """Initialize the session data service manager.
+        
+        Args:
+            app: Flask application instance (optional).
+        """
+        self._session_data: Dict[str, Dict] = {}  # session_id -> data
+        self._lock = threading.Lock()
+        
+        if app is not None:
+            self.init_app(app)
     
-    def _get_session_id(self) -> str:
-        """Get or create session identifier.
+    def init_app(self, app):
+        """Initialize with Flask app.
+        
+        Args:
+            app: Flask application instance.
+        """
+        app.before_request(self._before_request)
+        app.teardown_appcontext(self._teardown)
+    
+    def _before_request(self):
+        """Set up session data before each request."""
+        # Get or create session ID
+        if 'session_id' not in session:
+            session['session_id'] = str(uuid.uuid4())
+        
+        session_id = session['session_id']
+        
+        # Initialize session data if not exists
+        with self._lock:
+            if session_id not in self._session_data:
+                self._session_data[session_id] = {
+                    'files': {},
+                    'file_metadata': {},
+                    'current_file_key': None,
+                    'created_at': datetime.now()
+                }
+        
+        # Store in Flask's g for this request
+        g.session_id = session_id
+        g.session_data = self._session_data[session_id]
+    
+    def _teardown(self, exception):
+        """Clean up after request."""
+        pass  # Session data persists in memory until server restart
+    
+    def get_data_service(self) -> 'DataService':
+        """Get a DataService instance bound to current session.
         
         Returns:
-            Session identifier string.
+            DataService instance for current session.
         """
-        if self._session_id is None:
-            self._session_id = str(uuid.uuid4())
-        return self._session_id
+        return DataService(g.session_data)
+
+
+class DataService:
+    """Data service bound to a specific session's data store."""
+    
+    def __init__(self, session_data: Dict):
+        """Initialize with session data store.
+        
+        Args:
+            session_data: Dictionary containing session-specific data.
+        """
+        self._data = session_data
+    
+    @property
+    def _files(self) -> Dict[str, pd.DataFrame]:
+        """Get files dictionary."""
+        return self._data['files']
+    
+    @property
+    def _file_metadata(self) -> Dict[str, FileMetadata]:
+        """Get file metadata dictionary."""
+        return self._data['file_metadata']
+    
+    @property
+    def _current_file_key(self) -> Optional[str]:
+        """Get current file key."""
+        return self._data['current_file_key']
+    
+    @_current_file_key.setter
+    def _current_file_key(self, value: Optional[str]):
+        """Set current file key."""
+        self._data['current_file_key'] = value
     
     def load_file(self, display_name: str, df: pd.DataFrame, saved_filename: str) -> None:
         """Load a file into the data service.
@@ -197,7 +269,6 @@ class DataService:
             'total_students': total_students,
             'total_classes': total_classes,
             'current_file': self._current_file_key,
-            'session_id': self._get_session_id()
         }
 
 

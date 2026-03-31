@@ -2,6 +2,9 @@
 Grade Analysis Flask Application Factory
 
 This module provides the create_app factory function for the Flask application.
+
+MIT License
+Copyright (c) 2026 Grade Analysis App
 """
 
 from flask import Flask
@@ -12,7 +15,7 @@ import sys
 from app.config import Config, DevelopmentConfig, ProductionConfig, get_base_path
 from app.extensions import init_extensions
 from app.routes import register_blueprints
-from app.core.data_service import DataService
+from app.core.data_service import SessionDataService
 
 
 def create_app(config: Optional[Config] = None) -> Flask:
@@ -53,11 +56,16 @@ def create_app(config: Optional[Config] = None) -> Flask:
     # Initialize extensions
     init_extensions(app)
     
-    # Initialize data service with Flask app context
-    app.data_service = DataService()
+    # Initialize session-bound data service
+    app.session_data_service = SessionDataService(app)
     
     # Register blueprints
     register_blueprints(app)
+    
+    # Exempt API blueprint from CSRF protection
+    if hasattr(app, 'csrf'):
+        from app.routes.api import api_bp
+        app.csrf.exempt(api_bp)
     
     # Register error handlers
     _register_error_handlers(app)
@@ -117,5 +125,5 @@ def _register_context_processors(app: Flask) -> None:
         """Inject configuration variables into all templates."""
         return {
             'app_name': '高中成绩分析系统',
-            'app_version': '2.0.0'
+            'app_version': '3.0.0'
         }

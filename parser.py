@@ -3,6 +3,9 @@ Excel Parser Module
 
 This module handles parsing of Excel files containing student grade data.
 Supports both .xls and .xlsx formats.
+
+MIT License
+Copyright (c) 2026 Grade Analysis App
 """
 
 import pandas as pd

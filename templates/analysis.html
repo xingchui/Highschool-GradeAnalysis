@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+
+{% block title %}高级图表分析 - 高中成绩分析系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chart-container {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .chart-selector {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .chart-btn {
+        transition: all 0.2s ease;
+    }
+    .chart-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .chart-btn.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+    }
+    .filter-group {
+        margin-bottom: 15px;
+    }
+    .chart-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 400px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        color: #6c757d;
+    }
+    .loading-spinner {
+        display: none;
+    }
+    .chart-description {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-graph-up me-2"></i>高级图表分析 - {{ filename }}</h2>
+
+<!-- Chart Type Selector -->
+<div class="chart-selector">
+    <h5 class="mb-3"><i class="bi bi-pie-chart me-2"></i>选择图表类型</h5>
+    <div class="row g-3">
+        {% for chart in chart_list %}
+        <div class="col-md-3 col-sm-6">
+            <button type="button" 
+                    class="btn btn-outline-primary chart-btn w-100 h-100 text-start p-3"
+                    data-chart-type="{{ chart.id }}"
+                    onclick="selectChart('{{ chart.id }}')">
+                <div class="fw-bold">{{ chart.name }}</div>
+                <div class="chart-description">{{ chart.description }}</div>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Dynamic Filters -->
+<div class="card mb-4" id="filter-panel" style="display: none;">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-funnel me-2"></i>筛选条件</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <!-- Score Column Filter -->
+            <div class="col-md-4" id="score-filter-group">
+                <label class="form-label">分数类型</label>
+                <select class="form-select" id="score-column-select">
+                    <option value="total_scaled">总分（赋分）</option>
+                    <option value="total_raw">总分（原始）</option>
+                    <option value="chinese">语文</option>
+                    <option value="math">数学</option>
+                    <option value="english">英语</option>
+                    <option value="physics">物理</option>
+                    <option value="chemistry">化学</option>
+                    <option value="biology">生物</option>
+                </select>
+            </div>
+            
+            <!-- Scatter X Filter -->
+            <div class="col-md-4" id="scatter-x-filter" style="display: none;">
+                <label class="form-label">X轴学科</label>
+                <select class="form-select" id="scatter-x-select">
+                    <option value="math">数学</option>
+                    <option value="chinese">语文</option>
+                    <option value="english">英语</option>
+                    <option value="physics">物理</option>
+                    <option value="chemistry">化学</option>
+                    <option value="biology">生物</option>
+                </select>
+            </div>
+            
+            <!-- Scatter Y Filter -->
+            <div class="col-md-4" id="scatter-y-filter" style="display: none;">
+                <label class="form-label">Y轴学科</label>
+                <select class="form-select" id="scatter-y-select">
+                    <option value="physics">物理</option>
+                    <option value="math">数学</option>
+                    <option value="chinese">语文</option>
+                    <option value="english">英语</option>
+                    <option value="chemistry">化学</option>
+                    <option value="biology">生物</option>
+                </select>
+            </div>
+            
+            <!-- Regression Toggle -->
+            <div class="col-md-4" id="regression-filter" style="display: none;">
+                <label class="form-label">回归线</label>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="show-regression" checked>
+                    <label class="form-check-label" for="show-regression">显示回归线</label>
+                </div>
+            </div>
+            
+            <!-- Aggregation Filter -->
+            <div class="col-md-4" id="agg-filter" style="display: none;">
+                <label class="form-label">聚合方式</label>
+                <select class="form-select" id="agg-select">
+                    <option value="mean">平均值</option>
+                    <option value="median">中位数</option>
+                    <option value="max">最大值</option>
+                    <option value="min">最小值</option>
+                </select>
+            </div>
+            
+            <!-- Apply Button -->
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="button" class="btn btn-primary" onclick="loadChart()">
+                    <i class="bi bi-arrow-clockwise me-2"></i>生成图表
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Display Area -->
+<div class="chart-container">
+    <div id="chart-area">
+        <div class="chart-placeholder">
+            <div class="text-center">
+                <i class="bi bi-bar-chart-line fs-1 mb-3 d-block"></i>
+                <p>请在上方选择一个图表类型</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Spinner -->
+    <div id="chart-loading" class="chart-placeholder" style="display: none;">
+        <div class="text-center">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">加载中...</span>
+            </div>
+            <p>正在生成图表...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Charts Section -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="chart-container">
+            <h5 class="mb-3"><i class="bi bi-award me-2"></i>全校前10名</h5>
+            <div id="top-students-chart">
+                {{ top_students_chart | safe }}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="chart-container">
+            <h5 class="mb-3"><i class="bi bi-bar-chart me-2"></i>班级上线率对比</h5>
+            <div id="line-rate-chart">
+                {{ line_rate_chart | safe }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="{{ url_for('static', filename='js/chart-export.js') }}"></script>
+<script>
+    let currentChartType = null;
+    
+    // Chart descriptions for filter visibility
+    const chartFilters = {
+        'box': ['score-filter-group', 'agg-filter'],
+        'heatmap': ['agg-filter'],
+        'scatter': ['scatter-x-filter', 'scatter-y-filter', 'regression-filter'],
+        'violin': ['score-filter-group'],
+        'correlation': [],
+        'distribution': ['score-filter-group'],
+        'rank_change': []
+    };
+    
+    function selectChart(chartType) {
+        // Update button states
+        document.querySelectorAll('.chart-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.chartType === chartType) {
+                btn.classList.add('active');
+            }
+        });
+        
+        currentChartType = chartType;
+        
+        // Show filter panel
+        const filterPanel = document.getElementById('filter-panel');
+        filterPanel.style.display = 'block';
+        
+        // Show/hide relevant filters
+        const filters = chartFilters[chartType] || [];
+        
+        // Hide all filter groups first
+        document.getElementById('score-filter-group').style.display = 'none';
+        document.getElementById('scatter-x-filter').style.display = 'none';
+        document.getElementById('scatter-y-filter').style.display = 'none';
+        document.getElementById('regression-filter').style.display = 'none';
+        document.getElementById('agg-filter').style.display = 'none';
+        
+        // Show relevant filters
+        filters.forEach(filterId => {
+            document.getElementById(filterId).style.display = 'block';
+        });
+        
+        // Auto-load chart
+        loadChart();
+    }
+    
+    function loadChart() {
+        if (!currentChartType) return;
+        
+        // Show loading
+        document.getElementById('chart-area').style.display = 'none';
+        document.getElementById('chart-loading').style.display = 'flex';
+        
+        // Build params
+        const params = {};
+        
+        if (document.getElementById('score-filter-group').style.display !== 'none') {
+            params.score_column = document.getElementById('score-column-select').value;
+        }
+        
+        if (document.getElementById('scatter-x-filter').style.display !== 'none') {
+            params.x_col = document.getElementById('scatter-x-select').value;
+            params.y_col = document.getElementById('scatter-y-select').value;
+            params.show_regression = document.getElementById('show-regression').checked;
+        }
+        
+        if (document.getElementById('agg-filter').style.display !== 'none') {
+            params.aggfunc = document.getElementById('agg-select').value;
+        }
+        
+        // Make API call
+        fetch('/api/charts/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                chart_type: currentChartType,
+                params: params
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Hide loading, show chart
+            document.getElementById('chart-loading').style.display = 'none';
+            document.getElementById('chart-area').style.display = 'block';
+            
+            if (data.chart_html) {
+                // Inject chart HTML and execute scripts
+                injectChartHTML(data.chart_html);
+            } else {
+                document.getElementById('chart-area').innerHTML = 
+                    '<div class="alert alert-danger">生成图表失败: ' + (data.error || '未知错误') + '</div>';
+            }
+        })
+        .catch(error => {
+            document.getElementById('chart-loading').style.display = 'none';
+            document.getElementById('chart-area').style.display = 'block';
+            document.getElementById('chart-area').innerHTML = 
+                '<div class="alert alert-danger">请求失败: ' + error.message + '</div>';
+        });
+    }
+    
+    // Function to inject HTML safely (without eval)
+    function injectChartHTML(html) {
+        const chartArea = document.getElementById('chart-area');
+        chartArea.innerHTML = '';
+        
+        // Create a temporary container
+        const container = document.createElement('div');
+        container.innerHTML = html;
+        
+        // Find all scripts
+        const scripts = container.querySelectorAll('script');
+        const inlineScripts = [];
+        
+        scripts.forEach(script => {
+            if (script.src) {
+                // External script - load it
+                const newScript = document.createElement('script');
+                newScript.src = script.src;
+                newScript.charset = script.charset || 'utf-8';
+                if (script.integrity) {
+                    newScript.integrity = script.integrity;
+                    newScript.crossOrigin = script.crossOrigin || 'anonymous';
+                }
+                document.head.appendChild(newScript);
+            } else if (script.textContent && script.textContent.trim()) {
+                // Collect inline scripts for later execution
+                inlineScripts.push(script.textContent.trim());
+            }
+            script.remove(); // Remove original script tag
+        });
+        
+        // Append the HTML content first (so Plotly div exists)
+        chartArea.appendChild(container);
+        
+        // Execute inline scripts after DOM is ready
+        setTimeout(() => {
+            inlineScripts.forEach(code => {
+                try {
+                    // Execute script safely
+                    const newScript = document.createElement('script');
+                    newScript.textContent = code;
+                    document.head.appendChild(newScript);
+                    newScript.remove(); // Clean up after execution
+                } catch (e) {
+                    console.error('Script execution error:', e);
+                }
+            });
+            
+            // Add export buttons after chart is rendered
+            setTimeout(() => {
+                if (typeof ChartExport !== 'undefined') {
+                    const plotlyCharts = chartArea.querySelectorAll('.js-plotly-plot, [data-originalheight]');
+                    plotlyCharts.forEach((chart, index) => {
+                        if (!chart.parentElement.querySelector('.chart-export-buttons')) {
+                            const chartId = chart.id || `dynamic-chart-${index}`;
+                            chart.id = chartId;
+                            ChartExport.addExportButton(chartId, { filename: `分析图表_${currentChartType}` });
+                        }
+                    });
+                }
+            }, 500);
+        }, 100);
+    }
+</script>
+{% endblock %}

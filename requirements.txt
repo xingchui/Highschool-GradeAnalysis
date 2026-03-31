@@ -3,14 +3,23 @@
 # Web Framework
 Flask==3.1.2
 Werkzeug==3.1.5
+Flask-WTF>=1.2.0  # For CSRF protection
 
 # Data Processing
 pandas==2.3.3
 openpyxl==3.1.5
 xlrd==2.0.2
+numpy>=1.24.0
 
 # Visualization
 plotly==6.5.2
+kaleido>=0.2.1  # For chart image export
+
+# Statistics
+scipy>=1.10.0  # For regression analysis
+
+# Report Generation
+reportlab>=4.0  # For PDF generation
 
 # Packaging
 pyinstaller==6.19.0
@@ -18,3 +27,7 @@ pyinstaller==6.19.0
 # Code Quality (optional)
 flake8==8.0.0
 black==26.1.0
+
+# Optional: Redis session storage (for multi-process/multi-server deployments)
+# Flask-Session>=0.5.0
+# redis>=5.0.0

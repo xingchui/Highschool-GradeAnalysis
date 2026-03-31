@@ -2,14 +2,13 @@
 Flask Extensions Initialization
 
 This module initializes Flask extensions to avoid circular imports.
+
+MIT License
+Copyright (c) 2026 Grade Analysis App
 """
 
 from flask import Flask
 from typing import Optional
-
-
-# Extension instances (will be initialized in init_extensions)
-# Using lazy initialization to avoid circular imports
 
 
 def init_extensions(app: Flask) -> None:
@@ -18,11 +17,32 @@ def init_extensions(app: Flask) -> None:
     Args:
         app: Flask application instance.
     """
+    # Initialize CSRF protection
+    _init_csrf(app)
+    
     # Initialize session (using Flask's built-in session)
     _init_session(app)
     
     # Initialize logging
     _init_logging(app)
+
+
+def _init_csrf(app: Flask) -> None:
+    """Initialize CSRF protection.
+    
+    Args:
+        app: Flask application instance.
+    """
+    from flask_wtf.csrf import CSRFProtect
+    
+    csrf = CSRFProtect()
+    csrf.init_app(app)
+    
+    # Store csrf in app for later exemption of blueprints
+    app.csrf = csrf
+    
+    # Store csrf_token function for templates
+    app.jinja_env.globals['csrf_token'] = lambda: __import__('flask_wtf.csrf', fromlist=['csrf']).csrf.generate_csrf()
 
 
 def _init_session(app: Flask) -> None:

@@ -45,7 +45,17 @@
 </div>
 {% endif %}
 
-<h2 class="mb-4"><i class="bi bi-speedometer2 me-2"></i>数据分析概览 - {{ filename }}</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-speedometer2 me-2"></i>数据分析概览 - {{ filename }}</h2>
+    <div class="btn-group" role="group" aria-label="报表导出">
+        <a href="{{ url_for('main.download_report_pdf') }}" class="btn btn-danger" aria-label="导出PDF报表">
+            <i class="bi bi-file-earmark-pdf me-1"></i>导出PDF报表
+        </a>
+        <a href="{{ url_for('main.download_report_excel') }}" class="btn btn-success" aria-label="导出Excel报表">
+            <i class="bi bi-file-earmark-excel me-1"></i>导出Excel报表
+        </a>
+    </div>
+</div>
 
 <!-- Statistics Cards -->
 <div class="row mb-4">
@@ -118,7 +128,7 @@
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h4 class="mb-0"><i class="bi bi-trophy me-2"></i>全校前20名</h4>
-        <a href="{{ url_for('main.rankings_page') }}" class="btn btn-sm btn-outline-primary">
+        <a href="{{ url_for('rankings.rankings_page') }}" class="btn btn-sm btn-outline-primary">
             查看全部排名 <i class="bi bi-arrow-right"></i>
         </a>
     </div>
@@ -152,8 +162,8 @@
                         <td><span class="badge bg-primary">{{ student.total_scaled }}</span></td>
                         <td>{{ student.total_scaled_class_rank }}</td>
                         <td>
-                            <a href="{{ url_for('main.student_detail', student_id=student.student_id) }}" 
-                               class="btn btn-sm btn-outline-info" 
+                            <a href="{{ url_for('rankings.student_detail', student_id=student.student_id) }}"
+                               class="btn btn-sm btn-outline-info"
                                aria-label="查看{{ student.name }}的详细信息">
                                 <i class="bi bi-person"></i> 详情
                             </a>

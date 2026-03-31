@@ -3,6 +3,9 @@ Statistics Analyzer Module
 
 This module handles calculating statistics for 985/211/yiben (one book) score lines.
 Includes support for single subject score lines.
+
+MIT License
+Copyright (c) 2026 Grade Analysis App
 """
 
 import json
@@ -218,6 +221,9 @@ def calculate_class_line_stats(df: pd.DataFrame, score_column: str = 'total_scal
     Returns:
         DataFrame with line statistics per class.
     """
+    if 'class_id' not in df.columns:
+        return pd.DataFrame()  # Return empty DataFrame if no class_id column
+    
     if line_thresholds is None:
         config = load_config()
         line_thresholds = config.get('lines', {}).get('total_scaled', 
@@ -225,7 +231,7 @@ def calculate_class_line_stats(df: pd.DataFrame, score_column: str = 'total_scal
     
     results = []
     
-    for class_id in df['class_id'].unique():
+    for class_id in df['class_id'].dropna().unique():
         class_df = df[df['class_id'] == class_id]
         stats = calculate_line_stats(class_df, score_column, line_thresholds)
         

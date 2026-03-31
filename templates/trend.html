@@ -67,7 +67,7 @@
                 <h5 class="mb-0"><i class="bi bi-sliders me-2"></i>选择对比条件</h5>
             </div>
             <div class="card-body">
-                <form method="get" action="{{ url_for('main.trend_page') }}">
+                <form method="get" action="{{ url_for('trend.trend_page') }}">
                     <input type="hidden" name="student_query" value="">
                     <div class="row">
                         <div class="col-md-4">
@@ -205,7 +205,7 @@
                 <h5 class="mb-0"><i class="bi bi-person-search me-2"></i>查询学生成绩趋势</h5>
             </div>
             <div class="card-body">
-                <form method="get" action="{{ url_for('main.trend_page') }}">
+                <form method="get" action="{{ url_for('trend.trend_page') }}">
                     <div class="row">
                         <div class="col-md-3">
                             <label class="form-label" for="trend_exams"><strong>选择考试（可多选）：</strong></label>
@@ -327,9 +327,16 @@
         };
         
         Plotly.newPlot('trendChart', [trace1, trace2], layout);
+        
+        // Add export buttons for trend chart
+        ChartExport.addExportButton('trendChart', { filename: '成绩趋势图' });
         </script>
         {% endif %}
     </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/chart-export.js') }}"></script>
 {% endblock %}
