@@ -70,6 +70,35 @@ def _parse_xls(file_path: str, sheet_name: Optional[str] = None) -> pd.DataFrame
     return _clean_dataframe(df)
 
 
+def _find_header_rows(df_raw: pd.DataFrame):
+    """Find the header rows (may be 1 or 2 rows) by looking for key column names.
+    
+    For files like qzwlmc.xlsx, headers span TWO rows that need merging.
+    Row 1: 学校, 班级, 学号, 姓名, 总分(物理)(赋分), 语文, 数学, ...
+    Row 2: (empty), (empty), (empty), (empty), (empty), 分数, 全体名次, 校名次, 班名次, ...
+    
+    Args:
+        df_raw: Raw DataFrame read with header=None.
+        
+    Returns:
+        List of row indices to merge as header.
+    """
+    header_rows = []
+    header_keywords = ['班级', '姓名', '学校', '考号', 'student_id', 'class_id', 'name', '分数', '名次']
+    
+    for i, row in df_raw.iterrows():
+        row_str = ' '.join(str(x) for x in row if pd.notna(x))
+        if any(keyword in row_str for keyword in header_keywords):
+            header_rows.append(i)
+            if len(header_rows) >= 2:  # Max 2 header rows
+                break
+    
+    if not header_rows:
+        return [1]  # Default
+    
+    return header_rows
+
+
 def _parse_xlsx(file_path: str, sheet_name: Optional[str] = None) -> pd.DataFrame:
     """Parse an .xlsx file (Office Open XML format)."""
     # Use openpyxl engine for .xlsx files
@@ -78,15 +107,43 @@ def _parse_xlsx(file_path: str, sheet_name: Optional[str] = None) -> pd.DataFram
     if sheet_name is None:
         sheet_name = xls.sheet_names[0]
     
-    # First read to detect format (check if it has 2-row header)
+    # First read to detect header position
     df_raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None, engine='openpyxl')
-    fmt = detect_excel_format(df_raw)
     
-    # Liberal format has 2-row headers, use header=None
-    if fmt == 'liberal':
-        df = pd.read_excel(file_path, sheet_name=sheet_name, header=None, engine='openpyxl')
+    # Find the header row(s)
+    header_rows = _find_header_rows(df_raw)
+    
+    if len(header_rows) >= 2:
+        # Two-row header: read both and merge
+        df = pd.read_excel(file_path, sheet_name=sheet_name, header=header_rows, engine='openpyxl')
+        
+        # Merge MultiIndex columns into single-level header
+        if isinstance(df.columns, pd.MultiIndex):
+            merged_cols = []
+            for col in df.columns:
+                part1 = str(col[0]).strip() if pd.notna(col[0]) else ''
+                part2 = str(col[1]).strip() if pd.notna(col[1]) else ''
+                
+                if part1 and part2:
+                    # Skip 'Unnamed' parts
+                    if 'Unnamed' in part2:
+                        merged_cols.append(part1)
+                    elif 'Unnamed' in part1:
+                        merged_cols.append(part2)
+                    else:
+                        merged_cols.append(f"{part1}-{part2}")
+                elif part1:
+                    merged_cols.append(part1)
+                elif part2:
+                    merged_cols.append(part2)
+                else:
+                    merged_cols.append('')
+            
+            df.columns = merged_cols
     else:
-        df = pd.read_excel(file_path, sheet_name=sheet_name, header=1, engine='openpyxl')
+        # Single header row
+        header_row = header_rows[0]
+        df = pd.read_excel(file_path, sheet_name=sheet_name, header=header_row, engine='openpyxl')
     
     return _clean_dataframe(df)
 
@@ -107,117 +164,174 @@ def _clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 def _clean_new_format(df: pd.DataFrame) -> pd.DataFrame:
     """Clean the new format Excel (61 columns).
     
-    Column structure:
-    0: 学校, 1: 学号, 2: 考号, 3: 座位号, 4: 学籍号
-    5: 班级, 6: 姓名, 7: 选考科目, 8: 外语类型
-    9-15: 总分 (原始分, 赋分, 全体排名, 区县排名, 年级排名, 班级排名, 档次)
-    16-21: 语文 (得分, 联考排名, 区县排名, 年级排名, 班级排名, 档次)
-    22-27: 数学 (得分, 联考排名, 区县排名, 年级排名, 班级排名, 档次)
-    28-33: 英语 (得分, 联考排名, 区县排名, 年级排名, 班级排名, 档次)
-    34-39: 物理 (得分, 联考排名, 区县排名, 年级排名, 班级排名, 档次)
-    40-46: 化学 (原始分, 赋分, 联考排名, 区县排名, 年级排名, 班级排名, 档次)
-    47-53: 生物 (原始分, 赋分, 联考排名, 区县排名, 年级排名, 班级排名, 档次)
-    54-60: 地理 (原始分, 赋分, 联考排名, 区县排名, 年级排名, 班级排名, 档次)
+    Dynamically detects column positions by header names instead of fixed positions.
+    Supports different column orders in Excel files.
     """
-    # Define column mapping for new format
-    column_names = {
-        0: 'school',
-        1: 'student_id',
-        2: 'exam_id',
-        3: 'seat_number',
-        4: 'enrollment_id',
-        5: 'class_id',
-        6: 'name',
-        7: 'optional_subject',  # 选考科目
-        8: 'foreign_lang_type',  # 外语类型
-        # Total scores
-        9: 'total_raw',
-        10: 'total_scaled',
-        11: 'total_all_rank',
-        12: 'total_district_rank',
-        13: 'total_school_rank',
-        14: 'total_class_rank',
-        15: 'total_level',
-        # Chinese
-        16: 'chinese',
-        17: 'chinese_exam_rank',
-        18: 'chinese_district_rank',
-        19: 'chinese_school_rank',
-        20: 'chinese_class_rank',
-        21: 'chinese_level',
+    import re
+    
+    # Define keyword patterns for each column (from the actual Excel header)
+    # The header row contains column names like: 学校, 班级, 学号, 姓名, etc.
+    # Also supports merged two-row headers like: 总分(物理)(赋分)-分数
+    column_patterns = {
+        'school': ['学校'],
+        'student_id': ['学号'],
+        'exam_id': ['考号'],
+        'seat_number': ['座位号'],
+        'enrollment_id': ['学籍号'],
+        'class_id': ['班级'],
+        'name': ['姓名'],
+        'optional_subject': ['选考科目', '选科'],
+        'foreign_lang_type': ['外语类型', '小语种'],
+        # Total scores - only specific patterns (broad patterns like '总分' cause false matches)
+        'total_raw': ['总分(物理)-分数', '总分-分数', '总分(原始分)-分数'],
+        'total_scaled': ['总分(物理)(赋分)-分数', '总分(赋分)-分数'],
+        'total_all_rank': ['总分(物理)(赋分)-方向全体名次', '总分(物理)-方向全体名次', '总分(赋分)-方向全体名次', '总分-方向全体名次'],
+        'total_district_rank': ['总分(物理)(赋分)-方向偃师区名次', '总分(物理)-方向偃师区名次', '总分(赋分)-方向偃师区名次', '总分-方向偃师区名次'],
+        'total_school_rank': ['总分(物理)(赋分)-方向校名次', '总分(物理)-方向校名次', '总分(赋分)-方向校名次', '总分-方向校名次'],
+        'total_class_rank': ['总分(物理)(赋分)-方向班名次', '总分(物理)-方向班名次', '总分(赋分)-方向班名次', '总分-方向班名次'],
+        'total_level': ['总分(物理)(赋分)-等级', '总分(物理)-等级', '总分(赋分)-等级', '总分-等级', '档次'],
+        # Chinese - only specific patterns
+        'chinese': ['语文-分数'],
+        'chinese_exam_rank': ['语文-方向全体名次'],
+        'chinese_district_rank': ['语文-方向偃师区名次'],
+        'chinese_school_rank': ['语文-方向校名次'],
+        'chinese_class_rank': ['语文-方向班名次'],
+        'chinese_level': ['语文-等级'],
         # Math
-        22: 'math',
-        23: 'math_exam_rank',
-        24: 'math_district_rank',
-        25: 'math_school_rank',
-        26: 'math_class_rank',
-        27: 'math_level',
+        'math': ['数学-分数'],
+        'math_exam_rank': ['数学-方向全体名次'],
+        'math_district_rank': ['数学-方向偃师区名次'],
+        'math_school_rank': ['数学-方向校名次'],
+        'math_class_rank': ['数学-方向班名次'],
+        'math_level': ['数学-等级'],
         # English
-        28: 'english',
-        29: 'english_exam_rank',
-        30: 'english_district_rank',
-        31: 'english_school_rank',
-        32: 'english_class_rank',
-        33: 'english_level',
+        'english': ['英语-分数'],
+        'english_exam_rank': ['英语-方向全体名次'],
+        'english_district_rank': ['英语-方向偃师区名次'],
+        'english_school_rank': ['英语-方向校名次'],
+        'english_class_rank': ['英语-方向班名次'],
+        'english_level': ['英语-等级'],
         # Physics
-        34: 'physics',
-        35: 'physics_exam_rank',
-        36: 'physics_district_rank',
-        37: 'physics_school_rank',
-        38: 'physics_class_rank',
-        39: 'physics_level',
+        'physics': ['物理-分数'],
+        'physics_exam_rank': ['物理-方向全体名次'],
+        'physics_district_rank': ['物理-方向偃师区名次'],
+        'physics_school_rank': ['物理-方向校名次'],
+        'physics_class_rank': ['物理-方向班名次'],
+        'physics_level': ['物理-等级'],
         # Chemistry
-        40: 'chemistry_raw',
-        41: 'chemistry',
-        42: 'chemistry_exam_rank',
-        43: 'chemistry_district_rank',
-        44: 'chemistry_school_rank',
-        45: 'chemistry_class_rank',
-        46: 'chemistry_level',
+        'chemistry_scaled': ['化学(赋分)-分数'],
+        'chemistry': ['化学-分数'],
+        'chemistry_exam_rank': ['化学(赋分)-方向全体名次', '化学-方向全体名次'],
+        'chemistry_district_rank': ['化学(赋分)-方向偃师区名次', '化学-方向偃师区名次'],
+        'chemistry_school_rank': ['化学(赋分)-方向校名次', '化学-方向校名次'],
+        'chemistry_class_rank': ['化学(赋分)-方向班名次', '化学-方向班名次'],
+        'chemistry_level': ['化学(赋分)-等级', '化学-等级'],
         # Biology
-        47: 'biology_raw',
-        48: 'biology',
-        49: 'biology_exam_rank',
-        50: 'biology_district_rank',
-        51: 'biology_school_rank',
-        52: 'biology_class_rank',
-        53: 'biology_level',
+        'biology_scaled': ['生物(赋分)-分数'],
+        'biology': ['生物-分数'],
+        'biology_exam_rank': ['生物(赋分)-方向全体名次', '生物-方向全体名次'],
+        'biology_district_rank': ['生物(赋分)-方向偃师区名次', '生物-方向偃师区名次'],
+        'biology_school_rank': ['生物(赋分)-方向校名次', '生物-方向校名次'],
+        'biology_class_rank': ['生物(赋分)-方向班名次', '生物-方向班名次'],
+        'biology_level': ['生物(赋分)-等级', '生物-等级'],
         # Geography
-        54: 'geography_raw',
-        55: 'geography',
-        56: 'geography_exam_rank',
-        57: 'geography_district_rank',
-        58: 'geography_school_rank',
-        59: 'geography_class_rank',
-        60: 'geography_level',
+        'geography_scaled': ['地理(赋分)-分数'],
+        'geography': ['地理-分数'],
+        'geography_exam_rank': ['地理(赋分)-方向全体名次', '地理-方向全体名次'],
+        'geography_district_rank': ['地理(赋分)-方向偃师区名次', '地理-方向偃师区名次'],
+        'geography_school_rank': ['地理(赋分)-方向校名次', '地理-方向校名次'],
+        'geography_class_rank': ['地理(赋分)-方向班名次', '地理-方向班名次'],
+        'geography_level': ['地理(赋分)-等级', '地理-等级'],
+        # Politics
+        'politics_scaled': ['政治(赋分)-分数'],
+        'politics': ['政治-分数'],
+        'politics_exam_rank': ['政治(赋分)-方向全体名次', '政治-方向全体名次'],
+        'politics_district_rank': ['政治(赋分)-方向偃师区名次', '政治-方向偃师区名次'],
+        'politics_school_rank': ['政治(赋分)-方向校名次', '政治-方向校名次'],
+        'politics_class_rank': ['政治(赋分)-方向班名次', '政治-方向班名次'],
+        'politics_level': ['政治(赋分)-等级', '政治-等级'],
     }
     
-    # Rename columns
-    new_columns = {}
-    for i, col in enumerate(df.columns):
-        if i in column_names:
-            new_columns[col] = column_names[i]
+    # Build mapping: column_index -> new_name
+    # Use list to preserve order and handle duplicates
+    column_mapping = {}  # col_idx -> new_name
+    target_assigned = set()  # Track which targets have been assigned (to avoid duplicates)
     
-    df = df.rename(columns=new_columns)
+    for col_idx, col_name in enumerate(df.columns):
+        col_str = str(col_name).strip()
+        
+        # Skip empty or NaN columns
+        if not col_str or col_str.lower() in ['nan', 'none', '']:
+            continue
+        
+        # Try to match with patterns
+        for target_col, patterns in column_patterns.items():
+            found = False
+            for pattern in patterns:
+                if '*' in pattern:
+                    # Regex pattern
+                    if re.search(pattern, col_str, re.IGNORECASE):
+                        found = True
+                        break
+                else:
+                    # Exact or partial match - check both directions
+                    if pattern == col_str or pattern in col_str or col_str in pattern:
+                        found = True
+                        break
+            
+            if found:
+                # Only assign if this target hasn't been assigned yet (avoid duplicates)
+                if target_col not in target_assigned:
+                    column_mapping[col_idx] = target_col
+                    target_assigned.add(target_col)
+                break  # Found match for this column, move to next
+    
+    # Rename columns
+    rename_dict = {}
+    for idx, new_name in column_mapping.items():
+        if idx < len(df.columns):
+            old_name = df.columns[idx]
+            rename_dict[old_name] = new_name
+    
+    if rename_dict:
+        df = df.rename(columns=rename_dict)
+    
+    # Drop all "Unnamed" columns that weren't mapped
+    unnamed_cols = [col for col in df.columns if 'Unnamed' in str(col) or str(col).startswith('Unnamed')]
+    if unnamed_cols:
+        df = df.drop(columns=unnamed_cols)
     
     # Remove rows with NaN in critical columns
-    df = df.dropna(subset=['name', 'class_id'])
+    if 'name' in df.columns and 'class_id' in df.columns:
+        df = df.dropna(subset=['name', 'class_id'])
     
-    # Convert numeric columns
+    # Convert numeric columns (excluding class_id which is string)
     numeric_cols = [
-        'class_id', 'total_raw', 'total_scaled', 'total_school_rank', 'total_class_rank',
+        'total_raw', 'total_scaled', 'total_school_rank', 'total_class_rank',
         'chinese', 'chinese_school_rank', 'chinese_class_rank',
         'math', 'math_school_rank', 'math_class_rank',
         'english', 'english_school_rank', 'english_class_rank',
         'physics', 'physics_school_rank', 'physics_class_rank',
-        'chemistry_raw', 'chemistry', 'chemistry_school_rank', 'chemistry_class_rank',
-        'biology_raw', 'biology', 'biology_school_rank', 'biology_class_rank',
-        'geography_raw', 'geography', 'geography_school_rank', 'geography_class_rank',
+        'chemistry_raw', 'chemistry', 'chemistry_scaled', 'chemistry_school_rank', 'chemistry_class_rank',
+        'biology_raw', 'biology', 'biology_scaled', 'biology_school_rank', 'biology_class_rank',
+        'geography_raw', 'geography', 'geography_scaled', 'geography_school_rank', 'geography_class_rank',
+        'politics_raw', 'politics', 'politics_scaled', 'politics_school_rank', 'politics_class_rank',
     ]
     
     for col in numeric_cols:
         if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce')
+            # Ensure we're working with a Series, not DataFrame (handle duplicate column names)
+            if isinstance(df[col], pd.DataFrame):
+                # Take the first column if there are duplicates
+                df[col] = pd.to_numeric(df[col].iloc[:, 0], errors='coerce')
+            else:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+    
+    # Ensure class_id is string type (remove '.0' suffix from numeric conversion)
+    if 'class_id' in df.columns:
+        df['class_id'] = df['class_id'].apply(
+            lambda x: str(int(float(x))) if pd.notna(x) and str(x).replace('.0', '').isdigit() else str(x) if pd.notna(x) else None
+        ).replace('nan', None)
     
     return df
 
