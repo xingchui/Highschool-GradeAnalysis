@@ -110,38 +110,48 @@ def _parse_xlsx(file_path: str, sheet_name: Optional[str] = None) -> pd.DataFram
     # First read to detect header position
     df_raw = pd.read_excel(file_path, sheet_name=sheet_name, header=None, engine='openpyxl')
     
-    # Find the header row(s)
-    header_rows = _find_header_rows(df_raw)
+    # Detect format to decide header handling
+    fmt = detect_excel_format(df_raw)
     
-    if len(header_rows) >= 2:
-        # Two-row header: read both and merge
-        df = pd.read_excel(file_path, sheet_name=sheet_name, header=header_rows, engine='openpyxl')
+    if fmt == 'liberal':
+        # Liberal arts format: 2-row header, data starts at row 2 (0-indexed)
+        # Read without header, let _clean_liberal_format handle it
+        df = pd.read_excel(file_path, sheet_name=sheet_name, header=None, engine='openpyxl')
+    elif fmt == 'new':
+        # New format: detect and merge two-row headers
+        header_rows = _find_header_rows(df_raw)
         
-        # Merge MultiIndex columns into single-level header
-        if isinstance(df.columns, pd.MultiIndex):
-            merged_cols = []
-            for col in df.columns:
-                part1 = str(col[0]).strip() if pd.notna(col[0]) else ''
-                part2 = str(col[1]).strip() if pd.notna(col[1]) else ''
-                
-                if part1 and part2:
-                    # Skip 'Unnamed' parts
-                    if 'Unnamed' in part2:
+        if len(header_rows) >= 2:
+            df = pd.read_excel(file_path, sheet_name=sheet_name, header=header_rows, engine='openpyxl')
+            
+            # Merge MultiIndex columns into single-level header
+            if isinstance(df.columns, pd.MultiIndex):
+                merged_cols = []
+                for col in df.columns:
+                    part1 = str(col[0]).strip() if pd.notna(col[0]) else ''
+                    part2 = str(col[1]).strip() if pd.notna(col[1]) else ''
+                    
+                    if part1 and part2:
+                        if 'Unnamed' in part2:
+                            merged_cols.append(part1)
+                        elif 'Unnamed' in part1:
+                            merged_cols.append(part2)
+                        else:
+                            merged_cols.append(f"{part1}-{part2}")
+                    elif part1:
                         merged_cols.append(part1)
-                    elif 'Unnamed' in part1:
+                    elif part2:
                         merged_cols.append(part2)
                     else:
-                        merged_cols.append(f"{part1}-{part2}")
-                elif part1:
-                    merged_cols.append(part1)
-                elif part2:
-                    merged_cols.append(part2)
-                else:
-                    merged_cols.append('')
-            
-            df.columns = merged_cols
+                        merged_cols.append('')
+                
+                df.columns = merged_cols
+        else:
+            header_row = header_rows[0]
+            df = pd.read_excel(file_path, sheet_name=sheet_name, header=header_row, engine='openpyxl')
     else:
-        # Single header row
+        # Old format: single header row
+        header_rows = _find_header_rows(df_raw)
         header_row = header_rows[0]
         df = pd.read_excel(file_path, sheet_name=sheet_name, header=header_row, engine='openpyxl')
     
