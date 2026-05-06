@@ -228,33 +228,33 @@ def _clean_new_format(df: pd.DataFrame) -> pd.DataFrame:
         'physics_school_rank': ['物理-方向校名次'],
         'physics_class_rank': ['物理-方向班名次'],
         'physics_level': ['物理-等级'],
-        # Chemistry
-        'chemistry_scaled': ['化学(赋分)-分数'],
-        'chemistry': ['化学-分数'],
+        # Chemistry - convention: {subject}=赋分, {subject}_raw=原始分
+        'chemistry': ['化学(赋分)-分数'],
+        'chemistry_raw': ['化学-分数'],
         'chemistry_exam_rank': ['化学(赋分)-方向全体名次', '化学-方向全体名次'],
         'chemistry_district_rank': ['化学(赋分)-方向偃师区名次', '化学-方向偃师区名次'],
         'chemistry_school_rank': ['化学(赋分)-方向校名次', '化学-方向校名次'],
         'chemistry_class_rank': ['化学(赋分)-方向班名次', '化学-方向班名次'],
         'chemistry_level': ['化学(赋分)-等级', '化学-等级'],
         # Biology
-        'biology_scaled': ['生物(赋分)-分数'],
-        'biology': ['生物-分数'],
+        'biology': ['生物(赋分)-分数'],
+        'biology_raw': ['生物-分数'],
         'biology_exam_rank': ['生物(赋分)-方向全体名次', '生物-方向全体名次'],
         'biology_district_rank': ['生物(赋分)-方向偃师区名次', '生物-方向偃师区名次'],
         'biology_school_rank': ['生物(赋分)-方向校名次', '生物-方向校名次'],
         'biology_class_rank': ['生物(赋分)-方向班名次', '生物-方向班名次'],
         'biology_level': ['生物(赋分)-等级', '生物-等级'],
         # Geography
-        'geography_scaled': ['地理(赋分)-分数'],
-        'geography': ['地理-分数'],
+        'geography': ['地理(赋分)-分数'],
+        'geography_raw': ['地理-分数'],
         'geography_exam_rank': ['地理(赋分)-方向全体名次', '地理-方向全体名次'],
         'geography_district_rank': ['地理(赋分)-方向偃师区名次', '地理-方向偃师区名次'],
         'geography_school_rank': ['地理(赋分)-方向校名次', '地理-方向校名次'],
         'geography_class_rank': ['地理(赋分)-方向班名次', '地理-方向班名次'],
         'geography_level': ['地理(赋分)-等级', '地理-等级'],
         # Politics
-        'politics_scaled': ['政治(赋分)-分数'],
-        'politics': ['政治-分数'],
+        'politics': ['政治(赋分)-分数'],
+        'politics_raw': ['政治-分数'],
         'politics_exam_rank': ['政治(赋分)-方向全体名次', '政治-方向全体名次'],
         'politics_district_rank': ['政治(赋分)-方向偃师区名次', '政治-方向偃师区名次'],
         'politics_school_rank': ['政治(赋分)-方向校名次', '政治-方向校名次'],
@@ -305,6 +305,12 @@ def _clean_new_format(df: pd.DataFrame) -> pd.DataFrame:
     
     if rename_dict:
         df = df.rename(columns=rename_dict)
+    
+    # Add alias columns for backward compatibility:
+    # {subject} = 赋分, {subject}_raw = 原始分, {subject}_scaled = alias for 赋分
+    for subject in ['chemistry', 'biology', 'geography', 'politics']:
+        if subject in df.columns and subject + '_scaled' not in df.columns:
+            df[subject + '_scaled'] = df[subject]
     
     # Drop all "Unnamed" columns that weren't mapped
     unnamed_cols = [col for col in df.columns if 'Unnamed' in str(col) or str(col).startswith('Unnamed')]
