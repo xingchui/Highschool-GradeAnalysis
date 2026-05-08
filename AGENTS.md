@@ -1,7 +1,8 @@
-# AGENTS.md - Grade Analysis Web Application
+# AGENTS.md - 高中成绩分析系统 v3.0.0
 
-> **Project Type**: Python Flask Web Application for High School Grade Analysis  
-> **Version**: 2.0.0 (Application Factory Architecture)
+> **Project Type**: Python Flask Web Application for High School Grade Analysis
+> **License**: MIT
+> **UI Language**: 中文 (Chinese)
 
 ## Quick Start
 
@@ -9,18 +10,18 @@
 # Install dependencies
 pip install -r requirements.txt
 
-# Run with new architecture (recommended)
+# Run the app (entry point is run.py, NOT app.py)
 python run.py
-
-# Run with legacy architecture (still supported)
-python app.py
-
 # Access at http://localhost:5000
+
+# Alternative: run app.py directly (legacy single-file mode)
+python app.py
 ```
 
-## Build/Test/Lint Commands
+## Build Commands
 
 ```bash
+<<<<<<< HEAD
 # Run the web server
 python run.py                           # New architecture
 python app.py                           # Legacy architecture
@@ -152,9 +153,111 @@ from app.core.grade_service import GradeService
 - **Config**: Score thresholds in `config.json`, modifiable at `/config`
 - **PyInstaller**: Use `build.bat` for Windows executable
 - **License**: MIT
+=======
+# Build Windows executable (Windows only)
+build.bat
+# Output: dist\GradeAnalysisApp.exe
 
-## Adding New Excel Format Support
+# Or manually:
+pyinstaller --onefile --name GradeAnalysisApp ^
+    --add-data "templates;templates" --add-data "config.json;." ^
+    --hidden-import=app --hidden-import=app.core --hidden-import=app.routes ^
+    run.py
+```
 
+## Architecture Overview
+
+The project has **two entry points** with different architectures:
+
+| Entry | Architecture | Status |
+|-------|-------------|--------|
+| `run.py` → `app/` | Application factory pattern (Blueprints, DataService, GradeService) | **Current/Primary** |
+| `app.py` | Monolithic Flask app with global `loaded_files` dict | Legacy, still functional |
+
+### Module Structure
+
+```
+E:\op\op8\
+├── run.py                    # Primary entry point (uses app factory)
+├── app.py                    # Legacy single-file Flask app
+├── app/                      # Application factory package
+│   ├── __init__.py          # create_app() factory
+│   ├── config.py            # Config classes (Development/Production)
+│   ├── extensions.py        # Flask extensions init
+│   ├── core/
+│   │   ├── data_service.py  # Session-bound data management
+│   │   └── grade_service.py # Grade analysis service layer
+│   └── routes/
+│       ├── __init__.py      # Blueprint registration
+│       ├── main.py          # Main page blueprints
+│       └── api.py           # API endpoints
+├── parser.py                 # Excel parsing (3 formats: new/liberal/old)
+├── ranking.py                # Student ranking calculations
+├── grade_statistics.py       # 985/211/一本 statistics (NOT statistics.py)
+├── trend.py                  # Student progress tracking
+├── charts.py                 # Plotly chart generation
+├── config.json               # Score line thresholds + subject max scores
+├── templates/                # Jinja2 HTML templates
+└── data/                     # Uploaded Excel files (gitignored)
+```
+
+## Excel Parsing (parser.py) - Critical
+
+### Column Name Convention
+Parser converts **Chinese headers → English canonical names**. All downstream modules expect English column names:
+
+| Chinese Header | Canonical Name |
+|---------------|----------------|
+| 班级 | class_id (string) |
+| 姓名 | name |
+| 学号 | student_id |
+| 考号 | exam_id |
+| 总分(原始分) | total_raw |
+| 总分(赋分) | total_scaled |
+| 语文 | chinese |
+| 数学 | math |
+| 英语 | english |
+| 物理 | physics |
+| 化学 | chemistry / chemistry_raw |
+| 生物 | biology / biology_raw |
+| 地理 | geography / geography_raw |
+| 政治 | politics / politics_scaled |
+
+### Format Detection
+By column count: **≥60 = 新格式**, **50-59 = 文科**, **<50 = 旧格式**
+
+### Key Functions
+- `parse_excel(file_path, sheet_name=None)` - Parse single sheet
+- `parse_all_sheets(file_path)` - Returns dict of sheet_name → DataFrame
+- `get_student_by_id(df, student_id)` - Find student by ID
+- `get_students_by_class(df, class_id)` - Filter by class
+
+### Common Pitfalls
+- **Multi-header Excel files**: `_parse_xlsx()` uses only the **first** detected header row. If headers span two rows, only the first is used.
+- **class_id is string**: Never treat as int. Convert with `str(int(float(x)))` to strip `.0` suffix.
+- **NaN ranks**: Use `pd.to_numeric(df[col], errors='coerce')` for safe conversion.
+- **Duplicate column names**: Parser deduplicates via `target_assigned` set.
+- **"Unnamed" columns**: Automatically dropped after parsing.
+
+## Data Flow
+
+1. User uploads Excel → saved to `data/` with UUID suffix
+2. `parser.parse_all_sheets()` → dict of DataFrames → `pd.concat()` → single DataFrame
+3. Stored in-memory (global `loaded_files` in app.py, `DataService` in app/ package)
+4. All downstream modules (`ranking.py`, `grade_statistics.py`, `trend.py`) operate on the canonical DataFrame
+
+## Important Notes
+
+- **In-memory storage**: Data lost on server restart
+- **config.json**: Score thresholds modifiable via `/config` UI. Contains both lines (985/211/yiben) and subject max scores.
+- **Trend analysis**: Lazy-loads exam data via `trend.load_exam_data()` on first request
+- **PyInstaller**: Bundled exe reads templates/config from `sys._MEIPASS`
+- **No tests in requirements.txt**: pytest mentioned in README but not pinned
+>>>>>>> e26772c (release: v3.0.0)
+
+## Adding New Excel Format
+
+<<<<<<< HEAD
 ```python
 # In parser.py:
 def detect_excel_format(df: pd.DataFrame) -> str:
@@ -195,3 +298,9 @@ python -m pytest tests/test_data_service.py::TestDataService -v
 - `client`: Flask test client
 - `sample_dataframe`: Sample student data DataFrame
 - `data_service`: DataService with sample data loaded
+=======
+1. Update `detect_excel_format()` with new column count threshold
+2. Create `_clean_xxx_format(df)` with column mapping
+3. Add branch in `_clean_dataframe()` dispatcher
+4. Define numeric columns list for type conversion
+>>>>>>> e26772c (release: v3.0.0)

@@ -3,8 +3,17 @@ Trend Analysis Module
 
 This module handles analyzing student performance trends over multiple exams.
 
+<<<<<<< HEAD
 MIT License
 Copyright (c) 2026 Grade Analysis App
+=======
+⚠️  DESIGN NOTE: Global State Sharing
+    `exam_data` and `exam_metadata` are module-level global variables.
+    They are app-scoped (shared across all requests/sessions), NOT per-session.
+    In concurrent multi-user scenarios, exam data from different users may overlap.
+    This is acceptable for the current single-user deployment model.
+    For true session isolation, integrate with Flask-Session or pass DataFrames explicitly.
+>>>>>>> e26772c (release: v3.0.0)
 """
 
 import pandas as pd
@@ -16,6 +25,25 @@ import os
 exam_data = {}
 # Store file metadata
 exam_metadata = {}
+
+
+def register_exam_data(df: pd.DataFrame, exam_name: str) -> None:
+    """Register an already-parsed DataFrame as exam data (avoids disk re-read).
+    
+    Use this when the DataFrame is already in memory (e.g., from DataService).
+    
+    Args:
+        df: Pre-parsed DataFrame with student grade data.
+        exam_name: Display name for this exam.
+    """
+    exam_data[exam_name] = df
+    
+    # Store metadata
+    exam_metadata[exam_name] = {
+        'filepath': None,  # In-memory source
+        'total_students': len(df),
+        'classes': sorted(df['class_id'].dropna().unique().tolist()) if 'class_id' in df.columns else []
+    }
 
 
 def load_exam_data(filepath: str, exam_name: str = None) -> pd.DataFrame:
@@ -110,19 +138,46 @@ def compare_two_exams(exam1_name: str, exam2_name: str, class_id: str = None,
     else:
         rank_col = 'total_class_rank'
     
-    # Merge the two dataframes on student_id
+    # Merge the two dataframes on student_id (or name+class_id fallback)
     # Use outer join to get students from both exams
-    merged = pd.merge(
-        df1[['student_id', 'name', 'class_id', 'total_scaled', rank_col]].rename(
-            columns={'total_scaled': 'score1', rank_col: 'rank1'}
-        ),
-        df2[['student_id', 'name', 'class_id', 'total_scaled', rank_col]].rename(
-            columns={'total_scaled': 'score2', rank_col: 'rank2'}
-        ),
-        on='student_id',
-        how='outer',  # Changed from inner to outer to handle different class sets
-        suffixes=('', '_2')
-    )
+    id_col = 'student_id' if 'student_id' in df1.columns and 'student_id' in df2.columns else None
+    
+    if id_col:
+        # Normalize student_id to string to avoid int64/object merge errors
+        df1 = df1.copy()
+        df2 = df2.copy()
+        df1[id_col] = df1[id_col].astype(str)
+        df2[id_col] = df2[id_col].astype(str)
+        
+        # Merge on student_id
+        merged = pd.merge(
+            df1[[id_col, 'name', 'class_id', 'total_scaled', rank_col]].rename(
+                columns={'total_scaled': 'score1', rank_col: 'rank1'}
+            ),
+            df2[[id_col, 'name', 'class_id', 'total_scaled', rank_col]].rename(
+                columns={'total_scaled': 'score2', rank_col: 'rank2'}
+            ),
+            on=id_col,
+            how='outer',
+            suffixes=('', '_2')
+        )
+    else:
+        # Fallback: merge on name + class_id
+        df1_copy = df1[['name', 'class_id', 'total_scaled', rank_col]].copy()
+        df2_copy = df2[['name', 'class_id', 'total_scaled', rank_col]].copy()
+        df1_copy['score1'] = df1_copy.pop('total_scaled')
+        df1_copy['rank1'] = df1_copy.pop(rank_col)
+        df2_copy['score2'] = df2_copy.pop('total_scaled')
+        df2_copy['rank2'] = df2_copy.pop(rank_col)
+        
+        merged = pd.merge(
+            df1_copy, df2_copy,
+            on=['name', 'class_id'],
+            how='outer',
+            suffixes=('', '_2')
+        )
+        # Generate student_id for results
+        merged['student_id'] = merged['class_id'].astype(str) + '_' + merged['name'].astype(str)
     
     # Filter by class if specified
     # Check both class_id columns (from both exams)
@@ -199,7 +254,11 @@ def get_student_trend(student_id: str = None, student_name: str = None,
         # Find student by ID or name
         if student_id:
             # Convert both to string for comparison to handle int/float types
-            student = df[df['student_id'].astype(str) == student_id_str]
+            if 'student_id' in df.columns:
+                student = df[df['student_id'].astype(str) == student_id_str]
+            else:
+                # Fallback: search by name
+                student = df[df['name'].astype(str).str.contains(student_id_str, na=False)]
         elif student_name:
             student = df[df['name'].astype(str).str.contains(student_name, na=False)]
         else:
@@ -244,16 +303,19 @@ def get_student_by_id_or_name(query: str) -> List[Dict]:
     seen_ids = set()
     
     for exam_name, df in exam_data.items():
-        # Search by student_id
-        matches = df[df['student_id'].astype(str).str.contains(query, na=False)]
-        
+        # Search by student_id if column exists
+        if 'student_id' in df.columns:
+            matches = df[df['student_id'].astype(str).str.contains(query, na=False)]
+        else:
+            matches = pd.DataFrame()
+
         # Also search by name
         if 'name' in df.columns:
             name_matches = df[df['name'].astype(str).str.contains(query, na=False)]
             matches = pd.concat([matches, name_matches]).drop_duplicates()
         
         for _, student in matches.iterrows():
-            student_id = str(student.get('student_id', ''))
+            student_id = str(student.get('student_id', student.get('name', '')))
             if student_id not in seen_ids:
                 seen_ids.add(student_id)
                 results.append({

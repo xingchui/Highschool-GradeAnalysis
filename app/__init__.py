@@ -17,6 +17,8 @@ from app.extensions import init_extensions
 from app.routes import register_blueprints
 from app.core.data_service import SessionDataService
 
+__version__ = '3.0.0'
+
 
 def create_app(config: Optional[Config] = None) -> Flask:
     """Create and configure the Flask application.
@@ -125,5 +127,5 @@ def _register_context_processors(app: Flask) -> None:
         """Inject configuration variables into all templates."""
         return {
             'app_name': '高中成绩分析系统',
-            'app_version': '3.0.0'
+            'app_version': __version__
         }

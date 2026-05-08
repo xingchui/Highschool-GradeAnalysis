@@ -1,6 +1,13 @@
 """
 Flask Web Application for Grade Analysis
 
+⚠️  DEPRECATED: This monolithic entry point is no longer recommended.
+    Use `python run.py` instead, which uses the application factory pattern
+    with proper service layers and session management.
+    
+    This file is kept for backward compatibility only and will be removed
+    in a future version.
+
 Main application file that handles routes and serves HTML templates.
 """
 
@@ -19,7 +26,7 @@ from io import BytesIO
 
 # Initialize Flask app
 app = Flask(__name__)
-app.secret_key = 'grade-analysis-secret-key'
+app.secret_key = os.environ.get('SECRET_KEY', 'grade-analysis-secret-key')
 
 # Configuration
 UPLOAD_FOLDER = 'data'
@@ -255,6 +262,21 @@ def get_float(value, default):
         return default
 
 
+def _update_line_config(config, key, form, defaults):
+    """Update a line config entry from form data.
+    
+    Args:
+        config: Configuration dictionary.
+        key: Config key (e.g., 'chinese', 'chemistry_raw').
+        form: Flask request.form object.
+        defaults: Dict of line name to default value (e.g., {'985': 120, '211': 110, 'yiben': 105}).
+    """
+    config['lines'][key] = {
+        line_name: get_float(form.get(f'{key}_{line_name}'), default_val)
+        for line_name, default_val in defaults.items()
+    }
+
+
 @app.route('/config', methods=['GET', 'POST'])
 def config_page():
     """Handle configuration settings."""
@@ -262,102 +284,27 @@ def config_page():
         # Update configuration
         config = stats_module.load_config()
         
-        # Update total_raw lines
-        config['lines']['total_raw'] = {
-            '985': get_float(request.form.get('total_raw_985'), 600),
-            '211': get_float(request.form.get('total_raw_211'), 550),
-            'yiben': get_float(request.form.get('total_raw_yiben'), 500)
-        }
+        # Define all line configurations with defaults
+        line_configs = [
+            ('total_raw',      {'985': 600, '211': 550, 'yiben': 500}),
+            ('total_scaled',   {'985': 600, '211': 550, 'yiben': 500}),
+            ('chinese',        {'985': 120, '211': 110, 'yiben': 105}),
+            ('math',           {'985': 120, '211': 110, 'yiben': 105}),
+            ('english',        {'985': 120, '211': 110, 'yiben': 105}),
+            ('physics',        {'985': 90, '211': 80, 'yiben': 70}),
+            ('history',        {'985': 90, '211': 80, 'yiben': 70}),
+            ('chemistry_raw',  {'985': 90, '211': 80, 'yiben': 70}),
+            ('chemistry_scaled',{'985': 90, '211': 80, 'yiben': 70}),
+            ('biology_raw',    {'985': 90, '211': 80, 'yiben': 70}),
+            ('biology_scaled', {'985': 90, '211': 80, 'yiben': 70}),
+            ('politics_raw',   {'985': 90, '211': 80, 'yiben': 70}),
+            ('politics_scaled',{'985': 90, '211': 80, 'yiben': 70}),
+            ('geography_raw',  {'985': 90, '211': 80, 'yiben': 70}),
+            ('geography_scaled',{'985': 90, '211': 80, 'yiben': 70}),
+        ]
         
-        # Update total_scaled lines
-        config['lines']['total_scaled'] = {
-            '985': get_float(request.form.get('total_scaled_985'), 600),
-            '211': get_float(request.form.get('total_scaled_211'), 550),
-            'yiben': get_float(request.form.get('total_scaled_yiben'), 500)
-        }
-        
-        # Update Chinese lines
-        config['lines']['chinese'] = {
-            '985': get_float(request.form.get('chinese_985'), 120),
-            '211': get_float(request.form.get('chinese_211'), 110),
-            'yiben': get_float(request.form.get('chinese_yiben'), 105)
-        }
-        
-        # Update Math lines
-        config['lines']['math'] = {
-            '985': get_float(request.form.get('math_985'), 120),
-            '211': get_float(request.form.get('math_211'), 110),
-            'yiben': get_float(request.form.get('math_yiben'), 105)
-        }
-        
-        # Update English lines
-        config['lines']['english'] = {
-            '985': get_float(request.form.get('english_985'), 120),
-            '211': get_float(request.form.get('english_211'), 110),
-            'yiben': get_float(request.form.get('english_yiben'), 105)
-        }
-        
-        # Update Physics lines
-        config['lines']['physics'] = {
-            '985': get_float(request.form.get('physics_985'), 90),
-            '211': get_float(request.form.get('physics_211'), 80),
-            'yiben': get_float(request.form.get('physics_yiben'), 70)
-        }
-        
-        # Update History lines
-        config['lines']['history'] = {
-            '985': get_float(request.form.get('history_985'), 90),
-            '211': get_float(request.form.get('history_211'), 80),
-            'yiben': get_float(request.form.get('history_yiben'), 70)
-        }
-        
-        # Update Chemistry raw/scaled lines
-        config['lines']['chemistry_raw'] = {
-            '985': get_float(request.form.get('chemistry_raw_985'), 90),
-            '211': get_float(request.form.get('chemistry_raw_211'), 80),
-            'yiben': get_float(request.form.get('chemistry_raw_yiben'), 70)
-        }
-        config['lines']['chemistry_scaled'] = {
-            '985': get_float(request.form.get('chemistry_scaled_985'), 90),
-            '211': get_float(request.form.get('chemistry_scaled_211'), 80),
-            'yiben': get_float(request.form.get('chemistry_scaled_yiben'), 70)
-        }
-        
-        # Update Biology raw/scaled lines
-        config['lines']['biology_raw'] = {
-            '985': get_float(request.form.get('biology_raw_985'), 90),
-            '211': get_float(request.form.get('biology_raw_211'), 80),
-            'yiben': get_float(request.form.get('biology_raw_yiben'), 70)
-        }
-        config['lines']['biology_scaled'] = {
-            '985': get_float(request.form.get('biology_scaled_985'), 90),
-            '211': get_float(request.form.get('biology_scaled_211'), 80),
-            'yiben': get_float(request.form.get('biology_scaled_yiben'), 70)
-        }
-        
-        # Update Politics raw/scaled lines
-        config['lines']['politics_raw'] = {
-            '985': get_float(request.form.get('politics_raw_985'), 90),
-            '211': get_float(request.form.get('politics_raw_211'), 80),
-            'yiben': get_float(request.form.get('politics_raw_yiben'), 70)
-        }
-        config['lines']['politics_scaled'] = {
-            '985': get_float(request.form.get('politics_scaled_985'), 90),
-            '211': get_float(request.form.get('politics_scaled_211'), 80),
-            'yiben': get_float(request.form.get('politics_scaled_yiben'), 70)
-        }
-        
-        # Update Geography raw/scaled lines
-        config['lines']['geography_raw'] = {
-            '985': get_float(request.form.get('geography_raw_985'), 90),
-            '211': get_float(request.form.get('geography_raw_211'), 80),
-            'yiben': get_float(request.form.get('geography_raw_yiben'), 70)
-        }
-        config['lines']['geography_scaled'] = {
-            '985': get_float(request.form.get('geography_scaled_985'), 90),
-            '211': get_float(request.form.get('geography_scaled_211'), 80),
-            'yiben': get_float(request.form.get('geography_scaled_yiben'), 70)
-        }
+        for key, defaults in line_configs:
+            _update_line_config(config, key, request.form, defaults)
         
         stats_module.save_config(config)
         flash('Configuration saved successfully', 'success')
@@ -531,4 +478,11 @@ def about():
 
 
 if __name__ == '__main__':
+    import warnings
+    warnings.warn(
+        "app.py is DEPRECATED. Use 'python run.py' instead. "
+        "See README.md for details.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     app.run(debug=True, host='0.0.0.0', port=5000)

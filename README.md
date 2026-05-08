@@ -81,7 +81,7 @@ pyinstaller --onefile --add-data "templates;templates" --add-data "config.json;.
 │       └── api.py             # API接口
 ├── parser.py                   # Excel解析模块
 ├── ranking.py                  # 排名计算引擎
-├── statistics.py               # 统计分析模块
+├── grade_statistics.py         # 统计分析模块
 ├── trend.py                    # 趋势分析模块
 ├── charts.py                   # 图表生成模块
 ├── config.json                 # 配置文件（分数线设置）

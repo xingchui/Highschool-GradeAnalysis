@@ -11,7 +11,7 @@ import pandas as pd
 from typing import List, Optional
 
 
-# Score columns to rank
+# Score columns to rank (with Chinese display names)
 SCORE_COLUMNS = {
     'total_raw': '总分(原始分)',
     'total_scaled': '总分(赋分)',
@@ -19,8 +19,15 @@ SCORE_COLUMNS = {
     'math': '数学',
     'english': '英语',
     'physics': '物理',
-    'chemistry': '化学',
-    'biology': '生物',
+    'history': '历史',
+    'chemistry_raw': '化学(原始分)',
+    'chemistry': '化学(赋分)',
+    'biology_raw': '生物(原始分)',
+    'biology': '生物(赋分)',
+    'politics_raw': '政治(原始分)',
+    'politics': '政治(赋分)',
+    'geography_raw': '地理(原始分)',
+    'geography': '地理(赋分)',
 }
 
 

@@ -32,7 +32,9 @@ class FileMetadata:
 class SessionDataService:
     """Session-bound data service using Flask session.
     
-    Each browser session gets its own isolated data store.
+    Note: Currently app-scoped (bound to Flask app instance), NOT per-session.
+    Multiple browser tabs share the same data context.
+    For true session isolation, integrate Flask-Session or use Redis.
     """
     
     def __init__(self, app=None):

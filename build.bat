@@ -1,8 +1,11 @@
 @echo off
-REM Build script for Grade Analysis App v3.0
+REM Build script for Grade Analysis App v3.0.0
+
+set APP_VERSION=v3.0.0
+set APP_NAME=GradeAnalysisApp_%APP_VERSION%
 
 echo ============================================
-echo Grade Analysis App v3.0 - Build Script
+echo Grade Analysis App %APP_VERSION% - Build Script
 echo ============================================
 echo.
 
@@ -24,14 +27,16 @@ if errorlevel 1 (
 REM Create dist folder if not exists
 if not exist dist mkdir dist
 
-echo Building Grade Analysis App...
+echo Building Grade Analysis App %APP_VERSION%...
 echo.
 
 REM Build with PyInstaller using the new app factory structure
 pyinstaller --onefile ^
-    --name GradeAnalysisApp ^
+    --name %APP_NAME% ^
+    --version-file "version.txt" ^
     --add-data "templates;templates" ^
     --add-data "config.json;." ^
+    --add-data "README.md;." ^
     --hidden-import=flask ^
     --hidden-import=werkzeug ^
     --hidden-import=pandas ^
@@ -66,7 +71,12 @@ if errorlevel 1 (
 echo.
 echo ============================================
 echo Build complete!
+<<<<<<< HEAD
 echo Output: dist\GradeAnalysisApp.exe
 echo Version: 3.0.0
+=======
+echo Output: dist\%APP_NAME%.exe
+echo Version: %APP_VERSION%
+>>>>>>> e26772c (release: v3.0.0)
 echo ============================================
 pause

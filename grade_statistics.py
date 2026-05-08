@@ -189,23 +189,14 @@ def filter_by_optional_subject(df: pd.DataFrame, choice: str) -> pd.DataFrame:
         choice: Either 'physics' or 'history'.
         
     Returns:
-        Filtered DataFrame. Returns original df if column doesn't exist.
+        Filtered DataFrame.
     """
     if choice == 'physics':
-        # Filter students who have physics score
         if 'physics' in df.columns:
             return df[df['physics'].notna()]
-        else:
-            # No physics column, return empty or all
-            return df[df['physics'].notna()] if 'physics' in df.columns else df
     elif choice == 'history':
-        # Filter students who have history score
         if 'history' in df.columns:
             return df[df['history'].notna()]
-        else:
-            # No history column, try physics as fallback or return all
-            if 'physics' in df.columns:
-                return df[df['physics'].notna()]
     return df
 
 
